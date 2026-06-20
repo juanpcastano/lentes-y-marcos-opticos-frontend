@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:is(.dark *));
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Inter Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 1.5);
+  --radius-lg: calc(var(--radius) * 2);
+  --radius-xl: calc(var(--radius) * 3);
+  --radius-2xl: calc(var(--radius) * 3.6);
+  --radius-3xl: calc(var(--radius) * 4.4);
+  --radius-4xl: calc(var(--radius) * 5.2);
+}
+
+:root {
+  --background: #f8f9ff;
+  --foreground: #0b1c30;
+
+  --card: #ffffff;
+  --card-foreground: #0b1c30;
+
+  --popover: #ffffff;
+  --popover-foreground: #0b1c30;
+
+  --primary: #002b9a;
+  --primary-foreground: #ffffff;
+
+  --secondary: #aaf457;
+  --secondary-foreground: #0f2000;
+
+  --muted: #e5eeff;
+  --muted-foreground: #444653;
+
+  --accent: #aaf457;
+  --accent-foreground: #0f2000;
+
+  --destructive: #ba1a1a;
+
+  --border: #c5c5d5;
+  --input: #c5c5d5;
+  --ring: #3a55c1;
+
+  --chart-1: #aaf457;
+  --chart-2: #91da40;
+  --chart-3: #63a700;
+  --chart-4: #3d6a00;
+  --chart-5: #2d5000;
+
+  --radius: 0.5rem;
+
+  --sidebar: #eff4ff;
+  --sidebar-foreground: #0b1c30;
+  --sidebar-primary: #002b9a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e5eeff;
+  --sidebar-accent-foreground: #213145;
+  --sidebar-border: #c5c5d5;
+  --sidebar-ring: #3a55c1;
+}
+
+.dark {
+  --background: #031427;
+  --foreground: #d3e4fe;
+
+  --card: #102034;
+  --card-foreground: #d3e4fe;
+
+  --popover: #1b2b3f;
+  --popover-foreground: #d3e4fe;
+
+  --primary: #b8c4ff;
+  --primary-foreground: #002486;
+
+  --secondary: #91da40;
+  --secondary-foreground: #1d3700;
+
+  --muted: #1b2b3f;
+  --muted-foreground: #c5c5d5;
+
+  --accent: #91da40;
+  --accent-foreground: #1d3700;
+
+  --destructive: #ffb4ab;
+
+  --border: #444653;
+  --input: rgba(255 255 255 / 15%);
+  --ring: #b8c4ff;
+
+  --chart-1: #aaf457;
+  --chart-2: #91da40;
+  --chart-3: #63a700;
+  --chart-4: #3d6a00;
+  --chart-5: #2d5000;
+
+  --sidebar: #0b1c30;
+  --sidebar-foreground: #d3e4fe;
+  --sidebar-primary: #b8c4ff;
+  --sidebar-primary-foreground: #002486;
+  --sidebar-accent: #1b2b3f;
+  --sidebar-accent-foreground: #d3e4fe;
+  --sidebar-border: rgba(255 255 255 / 10%);
+  --sidebar-ring: #b8c4ff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
