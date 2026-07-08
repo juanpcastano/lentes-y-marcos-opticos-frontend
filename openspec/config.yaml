@@ -1,0 +1,26 @@
+schema: spec-driven
+
+Tech stack: TypeScript, TanStack Start, TanStack Query, Zustand, shadcn/ui, pnpm
+
+Project structure (by technical concern — no feature-based/screaming architecture):
+  src/api/            API client (base URL, Authorization header injection)
+  src/components/     Shared UI components; shadcn/ui primitives under ui/
+  src/lib/            Shared utilities
+  src/query-options/  TanStack Query factory functions, one file per query type
+  src/routes/         File-based routing via TanStack Start
+  src/services/       Fetch logic called by queryFn; currently returns hardcoded data
+  src/store/          Zustand stores (one slice per domain)
+
+query-options pattern:
+  - Each file exports a default function named create<Resource>QueryOptions
+  - Signature: (params? ResourceParams, options? Omit<UseQueryOptions<TResponse, TData, TError>, "queryKey" | "queryFn">)
+  - Generics: TData defaults to response type, TError defaults to Error
+  - Call chain: component → useQuery(create<Resource>QueryOptions(...)) → queryFn → src/services/ → (later) src/api/
+
+Naming conventions:
+  - All files, folders, identifiers: English
+  - Files and folders: kebab-case
+  - TypeScript: camelCase for variables/functions, PascalCase for types/components
+  - Zustand stores: use<Domain>Store
+  - Query-options files: <resource>.query-options.ts
+  - Service files: <resource>.service.ts

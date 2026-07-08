@@ -80,11 +80,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/apointments'
-    | '/catalog'
-    | '/orders'
-    | '/myaccount/profile'
+    '/' | '/apointments' | '/catalog' | '/orders' | '/myaccount/profile'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/apointments' | '/catalog' | '/orders' | '/myaccount/profile'
   id:
