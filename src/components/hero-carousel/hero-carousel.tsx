@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import createHeroSlidesQueryOptions from '#/query-options/hero-slides'
-import { HeroCarouselSkeleton } from './hero-carousel-skeleton'
-import { HeroSlide } from './hero-slide'
-import { CarouselControls } from './carousel-controls'
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import createHeroSlidesQueryOptions from "#/query-options/hero-slides"
+import { HeroCarouselSkeleton } from "./hero-carousel-skeleton"
+import { HeroSlide } from "./hero-slide"
+import { CarouselControls } from "./carousel-controls"
 
 const AUTO_PLAY_INTERVAL = 3000
 
@@ -19,7 +19,7 @@ export function HeroCarousel() {
 
   // Detect reduced motion preference
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
     prefersReducedMotion.current = mediaQuery.matches
 
     const handler = (e: MediaQueryListEvent) => {
@@ -28,8 +28,8 @@ export function HeroCarousel() {
         clearAutoPlay()
       }
     }
-    mediaQuery.addEventListener('change', handler)
-    return () => mediaQuery.removeEventListener('change', handler)
+    mediaQuery.addEventListener("change", handler)
+    return () => mediaQuery.removeEventListener("change", handler)
   }, [])
 
   const clearAutoPlay = useCallback(() => {
@@ -63,23 +63,23 @@ export function HeroCarousel() {
         startAutoPlay()
       }
     }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [clearAutoPlay, startAutoPlay])
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
+      if (e.key === "ArrowLeft") {
         goToPrevious()
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === "ArrowRight") {
         goToNext()
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
   }, [slides.length])
 
   const goToNext = useCallback(() => {

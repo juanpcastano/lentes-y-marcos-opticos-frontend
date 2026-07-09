@@ -1,7 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import { Button } from '#/components/ui/button'
-import { Image } from '#/components/ui/image'
-import type { HeroSlide as HeroSlideType } from './types'
+import { Link } from "@tanstack/react-router"
+import { Button } from "#/components/ui/button"
+import { Image } from "#/components/ui/image"
+import type { HeroSlide as HeroSlideType } from "./types"
 
 interface HeroSlideProps {
   slide: HeroSlideType

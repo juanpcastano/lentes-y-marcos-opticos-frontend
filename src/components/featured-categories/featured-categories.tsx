@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ChevronRight } from 'lucide-react'
-import createFeaturedCategoriesQueryOptions from '#/query-options/featured-categories'
-import { FeaturedCategoryCard } from './featured-category-card'
-import { FeaturedCategoriesSkeleton } from './featured-categories-skeleton'
+import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import { ChevronRight } from "lucide-react"
+import createFeaturedCategoriesQueryOptions from "#/query-options/featured-categories"
+import { FeaturedCategoryCard } from "./featured-category-card"
+import { FeaturedCategoriesSkeleton } from "./featured-categories-skeleton"
 
 export function FeaturedCategories() {
   const { data: categories = [], isLoading } = useQuery(

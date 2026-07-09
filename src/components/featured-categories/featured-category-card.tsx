@@ -1,5 +1,5 @@
-import { Image } from '#/components/ui/image'
-import type { FeaturedCategory } from './types'
+import { Image } from "#/components/ui/image"
+import type { FeaturedCategory } from "./types"
 
 interface FeaturedCategoryCardProps {
   category: FeaturedCategory

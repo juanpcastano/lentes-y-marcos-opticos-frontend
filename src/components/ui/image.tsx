@@ -1,6 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   containerClassName?: string
@@ -17,7 +17,7 @@ export function Image({
 
   return (
     <div
-      className={cn('relative overflow-hidden bg-muted', containerClassName)}
+      className={cn("relative overflow-hidden bg-muted", containerClassName)}
     >
       {!isLoaded && <Skeleton className="absolute inset-0 h-full w-full" />}
 
@@ -26,8 +26,8 @@ export function Image({
         alt={alt}
         onLoad={() => setIsLoaded(true)}
         className={cn(
-          'transition-opacity duration-300',
-          isLoaded ? 'opacity-100' : 'opacity-0',
+          "transition-opacity duration-300",
+          isLoaded ? "opacity-100" : "opacity-0",
           className,
         )}
         {...props}

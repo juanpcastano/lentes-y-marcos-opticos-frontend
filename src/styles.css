@@ -1,7 +1,7 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
-@import '@fontsource-variable/inter';
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -21,7 +21,7 @@ body {
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Inter Variable', sans-serif;
+  --font-sans: "Inter Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -86,7 +86,7 @@ body {
 
   --destructive: #ba1a1a;
 
-  --border: #c5c5d5;
+  --border: #e5eeff;
   --input: #c5c5d5;
   --ring: #3a55c1;
 
@@ -132,7 +132,7 @@ body {
 
   --destructive: #ffb4ab;
 
-  --border: #444653;
+  --border: #1b2b3f;
   --input: rgba(255 255 255 / 15%);
   --ring: #b8c4ff;
 
@@ -160,7 +160,7 @@ body {
     @apply bg-background text-foreground;
   }
   button:not(:disabled),
-  [role='button']:not(:disabled) {
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   html {

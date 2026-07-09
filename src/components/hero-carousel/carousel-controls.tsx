@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface CarouselControlsProps {
   total: number
@@ -44,11 +44,11 @@ export function CarouselControls({
             onClick={() => onSelect(index)}
             className={`h-2 rounded-full transition-all ${
               index === activeIndex
-                ? 'w-6 bg-white'
-                : 'w-2 bg-white/50 hover:bg-white/75'
+                ? "w-6 bg-white"
+                : "w-2 bg-white/50 hover:bg-white/75"
             }`}
             aria-label={`Go to slide ${index + 1}`}
-            aria-current={index === activeIndex ? 'true' : undefined}
+            aria-current={index === activeIndex ? "true" : undefined}
           />
         ))}
       </div>

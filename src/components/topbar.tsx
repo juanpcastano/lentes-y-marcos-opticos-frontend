@@ -1,6 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import NavMenu from './nav-menu'
-import ActionsMenu from './actions-menu'
+import { Link } from "@tanstack/react-router"
+import NavMenu from "./nav-menu"
+import ActionsMenu from "./actions-menu"
+import MobileNavDrawer from "./mobile-nav-drawer"
 
 const Logo = () => {
   return (
@@ -9,9 +10,11 @@ const Logo = () => {
         <img
           src="/logo.png"
           alt="Lentes Y Marcos Ópticos Logo"
-          className="h-18 pt-1 w-min"
+          className="h-14 sm:h-18 pt-1 w-min"
         />
-        <h1 className="text-base font-black pl-2">LENTES Y MARCOS ÓPTICOS</h1>
+        <h1 className="text-sm sm:text-base font-black pl-2">
+          LENTES Y MARCOS ÓPTICOS
+        </h1>
       </div>
     </Link>
   )
@@ -24,8 +27,9 @@ const Topbar = () => {
         <Logo />
       </div>
       <NavMenu />
-      <div className="flex-1 flex justify-end">
+      <div className="flex-1 flex justify-end items-center gap-2">
         <ActionsMenu />
+        <MobileNavDrawer />
       </div>
     </div>
   )

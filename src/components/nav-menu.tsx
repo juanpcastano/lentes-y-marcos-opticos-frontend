@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -7,55 +7,56 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from './ui/navigation-menu'
-import { cn } from '#/lib/utils'
+} from "./ui/navigation-menu"
+import { cn } from "#/lib/utils"
+
+export const NAV_LINKS = [
+  { to: "/", label: "Inicio", hasDropdown: false },
+  { to: "/catalog", label: "Catálogo", hasDropdown: true },
+  { to: "/apointments", label: "Agendar Cita", hasDropdown: false },
+] as const
 
 const NavMenu = () => {
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <Link
-            className={cn(navigationMenuTriggerStyle(), 'text-lg')}
-            to="/"
-            activeProps={{
-              className: 'underline underline-offset-4',
-              style: { fontWeight: 700 },
-            }}
-          >
-            Inicio
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>
-            <Link
-              to="/catalog"
-              className="text-lg"
-              activeProps={{
-                className: 'font-bold underline underline-offset-4',
-              }}
-            >
-              Catálogo
-            </Link>
-          </NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <NavigationMenuLink>Link</NavigationMenuLink>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link
-            className={cn(navigationMenuTriggerStyle(), 'text-lg')}
-            to="/apointments"
-            activeProps={{
-              className: 'underline underline-offset-4',
-              style: { fontWeight: 700 },
-            }}
-          >
-            Agendar Cita
-          </Link>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+    <div className="hidden lg:block">
+      <NavigationMenu>
+        <NavigationMenuList>
+          {NAV_LINKS.map((link) =>
+            link.hasDropdown ? (
+              <NavigationMenuItem key={link.to}>
+                <NavigationMenuTrigger>
+                  <Link
+                    to={link.to}
+                    className="text-lg"
+                    activeProps={{
+                      className: "font-bold underline underline-offset-4",
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <NavigationMenuLink>Link</NavigationMenuLink>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            ) : (
+              <NavigationMenuItem key={link.to}>
+                <Link
+                  className={cn(navigationMenuTriggerStyle(), "text-lg")}
+                  to={link.to}
+                  activeProps={{
+                    className: "underline underline-offset-4",
+                    style: { fontWeight: 700 },
+                  }}
+                >
+                  {link.label}
+                </Link>
+              </NavigationMenuItem>
+            ),
+          )}
+        </NavigationMenuList>
+      </NavigationMenu>
+    </div>
   )
 }
 
