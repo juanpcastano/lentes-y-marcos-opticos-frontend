@@ -10,7 +10,7 @@
 
 ## Code style
 
-- Prettier: **no semicolons**, single quotes, trailing commas.
+- Prettier: **no semicolons**, double quotes, trailing commas.
 - TypeScript: `verbatimModuleSyntax` is enabled — use `import type` for type-only imports. `noUnusedLocals` and `noUnusedParameters` are enabled — unused variables will fail the build.
 - Format and fix: `pnpm format`
 - Check formatting: `pnpm check`
