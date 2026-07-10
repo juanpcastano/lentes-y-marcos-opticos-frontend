@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { ExamOfferBanner } from "#/components/exam-offer-banner/exam-offer-banner"
 import { FeaturedCategories } from "#/components/featured-categories/featured-categories"
 import { HeroCarousel } from "#/components/hero-carousel/hero-carousel"
 import { TopSellers } from "#/components/top-sellers/top-sellers"
@@ -15,6 +16,7 @@ function RouteComponent() {
       <TopSellers />
       <FeaturedCategories />
       <WhyChooseUs />
+      <ExamOfferBanner />
     </div>
   )
 }
