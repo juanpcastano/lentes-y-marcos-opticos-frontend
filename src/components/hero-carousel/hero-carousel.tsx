@@ -124,7 +124,7 @@ export function HeroCarousel() {
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured highlights"
-      className="group relative w-full overflow-hidden h-64 md:h-96 lg:h-120"
+      className="group relative w-full overflow-hidden h-64 md:h-96 lg:h-120 xl:h-150"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
