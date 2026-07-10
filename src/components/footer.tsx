@@ -2,16 +2,17 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react"
 
 const enterpriseData = {
   name: "Lentes Y Marcos Ópticos",
-  address: "Calle Principal 123, Ciudad",
-  phone: "+1 234 567 8900",
-  email: "contacto@lentesymarcos.com",
-  hours: "Lun - Vie: 9:00 AM - 6:00 PM",
+  address:
+    "Carrera 6 # 12-61 centro comercial la casona Local 119, Santiago de Cali, Colombia",
+  phone: "+57 316 5332684",
+  email: "lmopticos@gmail.com",
+  hours: "Lun - Sab: 8:00 AM - 6:00 PM",
 }
 
 const socialLinks = [
   {
     name: "Facebook",
-    href: "https://facebook.com/lentesymarcos",
+    href: "https://www.facebook.com/lentesymarcosopticos",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -26,7 +27,7 @@ const socialLinks = [
   },
   {
     name: "Instagram",
-    href: "https://instagram.com/lentesymarcos",
+    href: "https://www.instagram.com/l.mopticos",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -47,7 +48,7 @@ const socialLinks = [
   },
   {
     name: "WhatsApp",
-    href: "https://wa.me/12345678900",
+    href: "https://wa.me/573165332684",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
