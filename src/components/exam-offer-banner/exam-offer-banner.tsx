@@ -18,7 +18,7 @@ export function ExamOfferBanner() {
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 p-8">
       {/* Left column — text content */}
-      <div className="flex flex-col justify-center gap-6 bg-primary  rounded-l-xl p-6 text-primary-foreground md:p-10 lg:p-16">
+      <div className="flex flex-col justify-center gap-6 bg-primary rounded-t-xl md:rounded-l-xl md:rounded-tr-none p-6 text-primary-foreground md:p-10 lg:p-16">
         <h2 className="text-2xl font-bold md:text-3xl lg:text-4xl">
           {BANNER_DATA.headline}
         </h2>
@@ -38,7 +38,7 @@ export function ExamOfferBanner() {
         <Image
           src={BANNER_DATA.imageUrl}
           alt={BANNER_DATA.imageAlt}
-          containerClassName="aspect-[4/3] w-full md:aspect-auto md:h-full rounded-r-xl"
+          containerClassName="aspect-[4/3] w-full md:aspect-auto md:h-full rounded-b-xl md:rounded-r-xl md:rounded-bl-none"
           className="h-full w-full object-cover"
         />
       </div>
