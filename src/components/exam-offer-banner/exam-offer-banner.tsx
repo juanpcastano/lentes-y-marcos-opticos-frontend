@@ -38,7 +38,7 @@ export function ExamOfferBanner() {
         <Image
           src={BANNER_DATA.imageUrl}
           alt={BANNER_DATA.imageAlt}
-          containerClassName="aspect-[4/3] w-full md:aspect-auto md:h-full rounded-b-xl md:rounded-r-xl md:rounded-bl-none"
+          containerClassName="aspect-[4/3] w-full md:h-full rounded-b-xl md:rounded-r-xl md:rounded-bl-none"
           className="h-full w-full object-cover"
         />
       </div>

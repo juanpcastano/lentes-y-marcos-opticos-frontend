@@ -14,7 +14,7 @@ export async function fetchTopSellers(): Promise<TopProduct[]> {
         "https://images.pexels.com/photos/26575042/pexels-photo-26575042.jpeg?auto=compress&cs=tinysrgb&w=600",
       name: "Lentes Rectangulares Rosados",
       brand: "Persol",
-      price: 289900,
+      price: 3289900,
     },
     {
       imageUrl:
