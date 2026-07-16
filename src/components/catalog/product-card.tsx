@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { Image } from "#/components/ui/image"
 import { Button } from "#/components/ui/button"
 import { formatCop } from "./types"
@@ -37,8 +38,10 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         <span className="mt-1 text-sm font-bold text-primary">
           {formatCop(product.price)}
         </span>
-        <Button className="mt-auto w-full" variant="default">
-          Ver detalle
+        <Button asChild className="mt-auto w-full" variant="default">
+          <Link to="/product/$id" params={{ id: product.id }}>
+            Ver detalle
+          </Link>
         </Button>
       </div>
     </article>

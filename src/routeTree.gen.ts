@@ -14,6 +14,7 @@ import { Route as MainLayoutIndexRouteImport } from './routes/_main-layout/index
 import { Route as MainLayoutCatalogRouteImport } from './routes/_main-layout/catalog'
 import { Route as MainLayoutApointmentsRouteImport } from './routes/_main-layout/apointments'
 import { Route as MainLayoutAuthenticatedRouteImport } from './routes/_main-layout/_authenticated'
+import { Route as MainLayoutProductIdRouteImport } from './routes/_main-layout/product.$id'
 import { Route as MainLayoutAuthenticatedOrdersRouteImport } from './routes/_main-layout/_authenticated/orders'
 import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './routes/_main-layout/_authenticated/myaccount/profile'
 
@@ -40,6 +41,11 @@ const MainLayoutAuthenticatedRoute = MainLayoutAuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => MainLayoutRoute,
 } as any)
+const MainLayoutProductIdRoute = MainLayoutProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => MainLayoutRoute,
+} as any)
 const MainLayoutAuthenticatedOrdersRoute =
   MainLayoutAuthenticatedOrdersRouteImport.update({
     id: '/orders',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/apointments': typeof MainLayoutApointmentsRoute
   '/catalog': typeof MainLayoutCatalogRoute
   '/orders': typeof MainLayoutAuthenticatedOrdersRoute
+  '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
 }
 export interface FileRoutesByTo {
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/apointments': typeof MainLayoutApointmentsRoute
   '/catalog': typeof MainLayoutCatalogRoute
   '/orders': typeof MainLayoutAuthenticatedOrdersRoute
+  '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
 }
 export interface FileRoutesById {
@@ -75,14 +83,26 @@ export interface FileRoutesById {
   '/_main-layout/catalog': typeof MainLayoutCatalogRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
   '/_main-layout/_authenticated/orders': typeof MainLayoutAuthenticatedOrdersRoute
+  '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
   '/_main-layout/_authenticated/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/apointments' | '/catalog' | '/orders' | '/myaccount/profile'
+    | '/'
+    | '/apointments'
+    | '/catalog'
+    | '/orders'
+    | '/product/$id'
+    | '/myaccount/profile'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/apointments' | '/catalog' | '/orders' | '/myaccount/profile'
+  to:
+    | '/'
+    | '/apointments'
+    | '/catalog'
+    | '/orders'
+    | '/product/$id'
+    | '/myaccount/profile'
   id:
     | '__root__'
     | '/_main-layout'
@@ -91,6 +111,7 @@ export interface FileRouteTypes {
     | '/_main-layout/catalog'
     | '/_main-layout/'
     | '/_main-layout/_authenticated/orders'
+    | '/_main-layout/product/$id'
     | '/_main-layout/_authenticated/myaccount/profile'
   fileRoutesById: FileRoutesById
 }
@@ -135,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutAuthenticatedRouteImport
       parentRoute: typeof MainLayoutRoute
     }
+    '/_main-layout/product/$id': {
+      id: '/_main-layout/product/$id'
+      path: '/product/$id'
+      fullPath: '/product/$id'
+      preLoaderRoute: typeof MainLayoutProductIdRouteImport
+      parentRoute: typeof MainLayoutRoute
+    }
     '/_main-layout/_authenticated/orders': {
       id: '/_main-layout/_authenticated/orders'
       path: '/orders'
@@ -174,6 +202,7 @@ interface MainLayoutRouteChildren {
   MainLayoutApointmentsRoute: typeof MainLayoutApointmentsRoute
   MainLayoutCatalogRoute: typeof MainLayoutCatalogRoute
   MainLayoutIndexRoute: typeof MainLayoutIndexRoute
+  MainLayoutProductIdRoute: typeof MainLayoutProductIdRoute
 }
 
 const MainLayoutRouteChildren: MainLayoutRouteChildren = {
@@ -181,6 +210,7 @@ const MainLayoutRouteChildren: MainLayoutRouteChildren = {
   MainLayoutApointmentsRoute: MainLayoutApointmentsRoute,
   MainLayoutCatalogRoute: MainLayoutCatalogRoute,
   MainLayoutIndexRoute: MainLayoutIndexRoute,
+  MainLayoutProductIdRoute: MainLayoutProductIdRoute,
 }
 
 const MainLayoutRouteWithChildren = MainLayoutRoute._addFileChildren(

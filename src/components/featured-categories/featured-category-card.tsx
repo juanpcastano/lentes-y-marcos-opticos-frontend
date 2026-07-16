@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { Image } from "#/components/ui/image"
 import type { FeaturedCategory } from "./types"
 
@@ -7,7 +8,11 @@ interface FeaturedCategoryCardProps {
 
 export function FeaturedCategoryCard({ category }: FeaturedCategoryCardProps) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-3xl">
+    <Link
+      to="/catalog"
+      search={{ categories: [category.name] }}
+      className="relative block h-full w-full overflow-hidden rounded-3xl transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       <Image
         src={category.imageUrl}
         alt={category.name}
@@ -28,6 +33,6 @@ export function FeaturedCategoryCard({ category }: FeaturedCategoryCardProps) {
           {category.description}
         </p>
       </div>
-    </div>
+    </Link>
   )
 }

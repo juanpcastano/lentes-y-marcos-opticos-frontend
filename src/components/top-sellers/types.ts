@@ -1,4 +1,5 @@
 export interface TopProduct {
+  id: string
   imageUrl: string
   name: string
   brand: string

@@ -1,4 +1,5 @@
 import type { CatalogProduct } from "#/components/catalog/types"
+import type { ProductDetail } from "#/components/product-detail/types"
 
 export async function fetchProducts(): Promise<CatalogProduct[]> {
   return [
@@ -578,4 +579,45 @@ export async function fetchProducts(): Promise<CatalogProduct[]> {
       badge: "NUEVO",
     },
   ]
+}
+
+const extraImagePool = [
+  "https://images.pexels.com/photos/1232918/pexels-photo-1232918.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/2792465/pexels-photo-2792465.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3018366/pexels-photo-3018366.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/343720/pexels-photo-343720.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/1858405/pexels-photo-1858405.jpeg?auto=compress&cs=tinysrgb&w=600",
+]
+
+function toProductDetail(product: CatalogProduct): ProductDetail {
+  const idNum = Number(product.id)
+  const hasDiscount = product.badge === "OFERTA"
+  const discountPercentage = hasDiscount ? 20 : 0
+  const discountedPrice = hasDiscount
+    ? Math.round(product.price * (1 - discountPercentage / 100))
+    : product.price
+  const stock = (idNum * 7) % 20
+  const additionalImages = [0, 1, 2].map(
+    (i) => extraImagePool[(idNum + i) % extraImagePool.length],
+  )
+  const description = `Disfruta de los ${product.name} de ${product.brand}. Diseñados en ${product.material.toLowerCase()} con forma ${product.shape.toLowerCase()}, combinan estilo y comodidad para acompañarte en cada momento del día.`
+
+  return {
+    ...product,
+    additionalImages,
+    stock,
+    originalPrice: product.price,
+    discountedPrice,
+    discountPercentage,
+    description,
+  }
+}
+
+export async function fetchProductById(id: string): Promise<ProductDetail> {
+  const products = await fetchProducts()
+  const product = products.find((p) => p.id === id)
+  if (!product) {
+    throw new Error(`Product with id "${id}" not found`)
+  }
+  return toProductDetail(product)
 }

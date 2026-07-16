@@ -1,10 +1,15 @@
+import { Link } from "@tanstack/react-router"
 import { Image } from "#/components/ui/image"
 import { formatCop } from "./types"
 import type { TopProduct } from "./types"
 
 export function TopProductCard({ product }: { product: TopProduct }) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md">
+    <Link
+      to="/product/$id"
+      params={{ id: product.id }}
+      className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-transform hover:scale-[1.02] hover:shadow-md"
+    >
       <Image
         src={product.imageUrl}
         alt={product.name}
@@ -21,6 +26,6 @@ export function TopProductCard({ product }: { product: TopProduct }) {
           {formatCop(product.price)}
         </span>
       </div>
-    </article>
+    </Link>
   )
 }
