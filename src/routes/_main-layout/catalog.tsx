@@ -1,4 +1,9 @@
-import { createFileRoute, useSearch, useNavigate } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Link,
+  useSearch,
+  useNavigate,
+} from "@tanstack/react-router"
 import { z } from "zod"
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
@@ -173,6 +178,12 @@ function CatalogPage() {
                 selected={search.brands}
                 onToggle={(b) => toggleArray("brands", b)}
               />
+              <Link
+                to="/brands"
+                className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                Ver todas
+              </Link>
             </FilterSection>
 
             <FilterSection title="Categoría">
@@ -181,6 +192,12 @@ function CatalogPage() {
                 selected={search.categories}
                 onToggle={(c) => toggleArray("categories", c)}
               />
+              <Link
+                to="/categories"
+                className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                Ver todas
+              </Link>
             </FilterSection>
 
             <FilterSection title="Material">

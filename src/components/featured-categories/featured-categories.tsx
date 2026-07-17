@@ -31,7 +31,7 @@ export function FeaturedCategories() {
           </p>
         </div>
         <Link
-          to="/catalog"
+          to="/categories"
           className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline md:text-base"
         >
           Ver todas

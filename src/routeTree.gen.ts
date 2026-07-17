@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainLayoutRouteImport } from './routes/_main-layout'
 import { Route as MainLayoutIndexRouteImport } from './routes/_main-layout/index'
+import { Route as MainLayoutCategoriesRouteImport } from './routes/_main-layout/categories'
 import { Route as MainLayoutCatalogRouteImport } from './routes/_main-layout/catalog'
+import { Route as MainLayoutBrandsRouteImport } from './routes/_main-layout/brands'
 import { Route as MainLayoutApointmentsRouteImport } from './routes/_main-layout/apointments'
 import { Route as MainLayoutAuthenticatedRouteImport } from './routes/_main-layout/_authenticated'
 import { Route as MainLayoutProductIdRouteImport } from './routes/_main-layout/product.$id'
@@ -27,9 +29,19 @@ const MainLayoutIndexRoute = MainLayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MainLayoutRoute,
 } as any)
+const MainLayoutCategoriesRoute = MainLayoutCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => MainLayoutRoute,
+} as any)
 const MainLayoutCatalogRoute = MainLayoutCatalogRouteImport.update({
   id: '/catalog',
   path: '/catalog',
+  getParentRoute: () => MainLayoutRoute,
+} as any)
+const MainLayoutBrandsRoute = MainLayoutBrandsRouteImport.update({
+  id: '/brands',
+  path: '/brands',
   getParentRoute: () => MainLayoutRoute,
 } as any)
 const MainLayoutApointmentsRoute = MainLayoutApointmentsRouteImport.update({
@@ -62,7 +74,9 @@ const MainLayoutAuthenticatedMyaccountProfileRoute =
 export interface FileRoutesByFullPath {
   '/': typeof MainLayoutIndexRoute
   '/apointments': typeof MainLayoutApointmentsRoute
+  '/brands': typeof MainLayoutBrandsRoute
   '/catalog': typeof MainLayoutCatalogRoute
+  '/categories': typeof MainLayoutCategoriesRoute
   '/orders': typeof MainLayoutAuthenticatedOrdersRoute
   '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -70,7 +84,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof MainLayoutIndexRoute
   '/apointments': typeof MainLayoutApointmentsRoute
+  '/brands': typeof MainLayoutBrandsRoute
   '/catalog': typeof MainLayoutCatalogRoute
+  '/categories': typeof MainLayoutCategoriesRoute
   '/orders': typeof MainLayoutAuthenticatedOrdersRoute
   '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -80,7 +96,9 @@ export interface FileRoutesById {
   '/_main-layout': typeof MainLayoutRouteWithChildren
   '/_main-layout/_authenticated': typeof MainLayoutAuthenticatedRouteWithChildren
   '/_main-layout/apointments': typeof MainLayoutApointmentsRoute
+  '/_main-layout/brands': typeof MainLayoutBrandsRoute
   '/_main-layout/catalog': typeof MainLayoutCatalogRoute
+  '/_main-layout/categories': typeof MainLayoutCategoriesRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
   '/_main-layout/_authenticated/orders': typeof MainLayoutAuthenticatedOrdersRoute
   '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
@@ -91,7 +109,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/apointments'
+    | '/brands'
     | '/catalog'
+    | '/categories'
     | '/orders'
     | '/product/$id'
     | '/myaccount/profile'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/apointments'
+    | '/brands'
     | '/catalog'
+    | '/categories'
     | '/orders'
     | '/product/$id'
     | '/myaccount/profile'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '/_main-layout'
     | '/_main-layout/_authenticated'
     | '/_main-layout/apointments'
+    | '/_main-layout/brands'
     | '/_main-layout/catalog'
+    | '/_main-layout/categories'
     | '/_main-layout/'
     | '/_main-layout/_authenticated/orders'
     | '/_main-layout/product/$id'
@@ -135,11 +159,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutIndexRouteImport
       parentRoute: typeof MainLayoutRoute
     }
+    '/_main-layout/categories': {
+      id: '/_main-layout/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof MainLayoutCategoriesRouteImport
+      parentRoute: typeof MainLayoutRoute
+    }
     '/_main-layout/catalog': {
       id: '/_main-layout/catalog'
       path: '/catalog'
       fullPath: '/catalog'
       preLoaderRoute: typeof MainLayoutCatalogRouteImport
+      parentRoute: typeof MainLayoutRoute
+    }
+    '/_main-layout/brands': {
+      id: '/_main-layout/brands'
+      path: '/brands'
+      fullPath: '/brands'
+      preLoaderRoute: typeof MainLayoutBrandsRouteImport
       parentRoute: typeof MainLayoutRoute
     }
     '/_main-layout/apointments': {
@@ -200,7 +238,9 @@ const MainLayoutAuthenticatedRouteWithChildren =
 interface MainLayoutRouteChildren {
   MainLayoutAuthenticatedRoute: typeof MainLayoutAuthenticatedRouteWithChildren
   MainLayoutApointmentsRoute: typeof MainLayoutApointmentsRoute
+  MainLayoutBrandsRoute: typeof MainLayoutBrandsRoute
   MainLayoutCatalogRoute: typeof MainLayoutCatalogRoute
+  MainLayoutCategoriesRoute: typeof MainLayoutCategoriesRoute
   MainLayoutIndexRoute: typeof MainLayoutIndexRoute
   MainLayoutProductIdRoute: typeof MainLayoutProductIdRoute
 }
@@ -208,7 +248,9 @@ interface MainLayoutRouteChildren {
 const MainLayoutRouteChildren: MainLayoutRouteChildren = {
   MainLayoutAuthenticatedRoute: MainLayoutAuthenticatedRouteWithChildren,
   MainLayoutApointmentsRoute: MainLayoutApointmentsRoute,
+  MainLayoutBrandsRoute: MainLayoutBrandsRoute,
   MainLayoutCatalogRoute: MainLayoutCatalogRoute,
+  MainLayoutCategoriesRoute: MainLayoutCategoriesRoute,
   MainLayoutIndexRoute: MainLayoutIndexRoute,
   MainLayoutProductIdRoute: MainLayoutProductIdRoute,
 }
