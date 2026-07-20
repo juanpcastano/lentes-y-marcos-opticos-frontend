@@ -8,7 +8,7 @@ const BANNER_DATA = {
   description:
     "Por la compra de tus cristales graduados, el examen profesional corre por nuestra cuenta. Tecnologia computarizada de ultima generacion.",
   ctaText: "Reservar Mi Turno",
-  ctaLink: "/apointments",
+  ctaLink: "/appointments",
   imageUrl:
     "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80",
   imageAlt: "Sala de examen visual con tecnologia computarizada",

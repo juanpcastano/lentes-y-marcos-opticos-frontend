@@ -14,7 +14,7 @@ import { FEATURED_BRANDS } from "#/services/featured-brands"
 export const NAV_LINKS = [
   { to: "/", label: "Inicio", hasDropdown: false },
   { to: "/catalog", label: "Catálogo", hasDropdown: true },
-  { to: "/apointments", label: "Agendar Cita", hasDropdown: false },
+  { to: "/appointments", label: "Agendar Cita", hasDropdown: false },
 ] as const
 
 const NavMenu = () => {
