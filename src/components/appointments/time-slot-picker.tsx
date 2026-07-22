@@ -74,7 +74,7 @@ export function TimeSlotPicker({
             </div>
           </div>
           <Button
-            className="bg-white text-primary hover:bg-white/90 md:text-base"
+            className="bg-white text-primary hover:bg-white/90 dark:text-primary-foreground md:text-base"
             onClick={() => {}}
           >
             Confirmar Reserva
