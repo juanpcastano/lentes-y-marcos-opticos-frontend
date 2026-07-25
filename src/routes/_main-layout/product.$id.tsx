@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 
 import createProductQueryOptions from "#/query-options/product"
@@ -7,6 +7,7 @@ import { ProductImageGallery } from "#/components/product-detail/product-image-g
 import { ProductPrice } from "#/components/product-detail/product-price"
 import { StockIndicator } from "#/components/product-detail/stock-indicator"
 import { RelatedProducts } from "#/components/product-detail/related-products"
+import { useAuth } from "#/components/auth-provider"
 
 export const Route = createFileRoute("/_main-layout/product/$id")({
   component: ProductDetailPage,
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/_main-layout/product/$id")({
 
 function ProductDetailPage() {
   const { id } = Route.useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const {
     data: product,
     isLoading,
@@ -109,7 +112,20 @@ function ProductDetailPage() {
             ))}
           </div>
 
-          <Button size="lg" className="mt-2 w-full sm:w-auto">
+          <Button
+            size="lg"
+            className="mt-2 w-full sm:w-auto"
+            onClick={() => {
+              if (!user) {
+                navigate({
+                  to: "/login",
+                  search: { redirect: `/product/${id}` },
+                })
+                return
+              }
+              // TODO: actual add to cart logic
+            }}
+          >
             Añadir al carrito
           </Button>
         </div>

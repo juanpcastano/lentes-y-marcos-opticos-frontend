@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { Menu, Search, ShoppingCart, User } from "lucide-react"
-import { Link } from "@tanstack/react-router"
+import { Menu, Search, ShoppingCart, User, LogOut } from "lucide-react"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Sheet,
   SheetContent,
@@ -13,9 +13,35 @@ import { ButtonGroup } from "./ui/button-group"
 import { Input } from "./ui/input"
 import { ModeToggle } from "./mode-toggle"
 import { NAV_LINKS } from "./nav-menu"
+import { useAuth } from "./auth-provider"
+import { useQueryClient } from "@tanstack/react-query"
+import { logout } from "#/services/auth"
+import { ME_QUERY_KEY } from "#/query-options/auth"
 
 const MobileNavDrawer = () => {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  const currentPath = useRouterState({ select: (s) => s.location.href })
+
+  const handleClose = () => setOpen(false)
+
+  const guardNav = (to: string) => {
+    handleClose()
+    if (!user) {
+      navigate({ to: "/login", search: { redirect: currentPath } })
+      return
+    }
+    navigate({ to })
+  }
+
+  const handleLogout = async () => {
+    handleClose()
+    await logout()
+    queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    navigate({ to: "/" })
+  }
 
   return (
     <div className="lg:hidden">
@@ -41,7 +67,7 @@ const MobileNavDrawer = () => {
                       className:
                         "underline underline-offset-4 font-bold bg-muted/50",
                     }}
-                    onClick={() => setOpen(false)}
+                    onClick={handleClose}
                   >
                     {link.label}
                   </Link>
@@ -63,16 +89,73 @@ const MobileNavDrawer = () => {
             <div className="flex items-center justify-between">
               <ModeToggle />
               <div className="flex gap-2">
-                <Button variant="ghost" className="size-14">
+                <Button
+                  variant="ghost"
+                  className="size-14"
+                  onClick={() => guardNav("/myaccount/profile")}
+                >
                   <User className="size-8" />
                 </Button>
-                <Button variant="ghost" className="size-14">
-                  <Link to="/orders">
-                    <ShoppingCart className="size-8" />
-                  </Link>
+                <Button
+                  variant="ghost"
+                  className="size-14"
+                  onClick={() => guardNav("/orders")}
+                >
+                  <ShoppingCart className="size-8" />
                 </Button>
               </div>
             </div>
+            {user ? (
+              <div className="flex flex-col gap-1 border-t pt-2">
+                <Link
+                  to="/myaccount/profile"
+                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={handleClose}
+                >
+                  Mi Cuenta
+                </Link>
+                <Link
+                  to="/myaccount/orders"
+                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={handleClose}
+                >
+                  Mis Pedidos
+                </Link>
+                <Link
+                  to="/myaccount/appointments"
+                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={handleClose}
+                >
+                  Mis Citas
+                </Link>
+                <button
+                  className="flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="size-4" />
+                  Cerrar Sesión
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1 border-t pt-2">
+                <Link
+                  to="/login"
+                  search={{ redirect: currentPath }}
+                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={handleClose}
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  to="/signup"
+                  search={{ redirect: currentPath }}
+                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={handleClose}
+                >
+                  Registrarse
+                </Link>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>

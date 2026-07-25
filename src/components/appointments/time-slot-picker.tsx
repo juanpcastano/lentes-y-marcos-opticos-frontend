@@ -1,8 +1,10 @@
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarCheck } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
 
 import { Button } from "#/components/ui/button"
+import { useAuth } from "#/components/auth-provider"
 
 interface TimeSlotPickerProps {
   /** `undefined` when no date is selected yet */
@@ -25,6 +27,9 @@ export function TimeSlotPicker({
   selectedDate,
   onSelectSlot,
 }: TimeSlotPickerProps) {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
   if (slots === undefined) {
     return (
       <p className="text-base text-muted-foreground md:text-lg">
@@ -75,7 +80,16 @@ export function TimeSlotPicker({
           </div>
           <Button
             className="bg-white text-primary hover:bg-white/90 dark:text-primary-foreground md:text-base"
-            onClick={() => {}}
+            onClick={() => {
+              if (!user) {
+                navigate({
+                  to: "/login",
+                  search: { redirect: "/appointments" },
+                })
+                return
+              }
+              // TODO: actual appointment booking logic
+            }}
           >
             Confirmar Reserva
           </Button>
