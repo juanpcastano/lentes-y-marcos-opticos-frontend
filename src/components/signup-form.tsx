@@ -25,10 +25,11 @@ export function SignupForm({
   const queryClient = useQueryClient()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
 
   const signupMutation = useMutation({
-    mutationFn: () => signup({ name, email, password }),
+    mutationFn: () => signup({ name, email, phone, password }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
       navigate({ to: redirect ?? "/" })
@@ -93,6 +94,18 @@ export function SignupForm({
                 <FieldDescription>
                   Usaremos tu email únicamente para contactarte, no será
                   compartido con terceros
+                </FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="phone">Teléfono (opcional)</FieldLabel>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+                <FieldDescription>
+                  Lo usaremos para contactarte sobre tus citas y pedidos
                 </FieldDescription>
               </Field>
               <Field>

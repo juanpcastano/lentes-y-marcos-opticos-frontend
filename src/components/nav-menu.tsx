@@ -37,7 +37,7 @@ const NavMenu = () => {
                   </Link>
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="grid min-w-[320px] grid-cols-2 gap-6 p-4">
+                  <div className="grid min-w-[320px] grid-cols-2 gap-6 p-4 bg-popover">
                     <div className="flex flex-col gap-1">
                       <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
                         Categorías Destacadas
@@ -47,7 +47,7 @@ const NavMenu = () => {
                           key={category.name}
                           to="/catalog"
                           search={{ categories: [category.name] }}
-                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-primary"
+                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary hover:text-background"
                         >
                           {category.name}
                         </Link>
@@ -68,7 +68,7 @@ const NavMenu = () => {
                           key={brand.name}
                           to="/catalog"
                           search={{ brands: [brand.name] }}
-                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-primary"
+                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary hover:text-background"
                         >
                           {brand.name}
                         </Link>

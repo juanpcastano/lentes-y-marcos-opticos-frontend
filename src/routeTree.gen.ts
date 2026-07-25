@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as MainLayoutRouteImport } from './routes/_main-layout'
 import { Route as MainLayoutIndexRouteImport } from './routes/_main-layout/index'
 import { Route as MainLayoutCategoriesRouteImport } from './routes/_main-layout/categories'
@@ -33,6 +34,11 @@ const SignupRoute = SignupRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MainLayoutRoute = MainLayoutRouteImport.update({
@@ -106,6 +112,7 @@ const MainLayoutAuthenticatedMyaccountAppointmentsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof MainLayoutIndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/appointments': typeof MainLayoutAppointmentsRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
 }
 export interface FileRoutesByTo {
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/': typeof MainLayoutIndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main-layout': typeof MainLayoutRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_main-layout/_authenticated': typeof MainLayoutAuthenticatedRouteWithChildren
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/appointments'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/myaccount/profile'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_main-layout'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/_main-layout/_authenticated'
@@ -204,6 +216,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   MainLayoutRoute: typeof MainLayoutRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
 }
@@ -222,6 +235,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_main-layout': {
@@ -382,6 +402,7 @@ const MainLayoutRouteWithChildren = MainLayoutRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   MainLayoutRoute: MainLayoutRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
 }

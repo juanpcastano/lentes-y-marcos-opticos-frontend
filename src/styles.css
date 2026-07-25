@@ -23,6 +23,16 @@ body {
   margin: 0;
 }
 
+/* react-remove-scroll (Radix Select/Dialog/Sheet) adds margin-right and
+   padding-right to body[data-scroll-locked] to compensate the disappearing
+   scrollbar. With scrollbar-gutter: stable on html the gutter is already
+   reserved, so that compensation would push the content to the right.
+   Higher specificity beats the injected !important rules. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Inter Variable", sans-serif;
