@@ -19,6 +19,7 @@ import { Route as MainLayoutBrandsRouteImport } from './routes/_main-layout/bran
 import { Route as MainLayoutAppointmentsRouteImport } from './routes/_main-layout/appointments'
 import { Route as MainLayoutAuthenticatedRouteImport } from './routes/_main-layout/_authenticated'
 import { Route as MainLayoutProductIdRouteImport } from './routes/_main-layout/product.$id'
+import { Route as MainLayoutAuthenticatedMyaccountRouteImport } from './routes/_main-layout/_authenticated/myaccount'
 import { Route as MainLayoutAuthenticatedCartRouteImport } from './routes/_main-layout/_authenticated/cart'
 import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './routes/_main-layout/_authenticated/myaccount/profile'
 import { Route as MainLayoutAuthenticatedMyaccountOrdersRouteImport } from './routes/_main-layout/_authenticated/myaccount/orders'
@@ -72,6 +73,12 @@ const MainLayoutProductIdRoute = MainLayoutProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => MainLayoutRoute,
 } as any)
+const MainLayoutAuthenticatedMyaccountRoute =
+  MainLayoutAuthenticatedMyaccountRouteImport.update({
+    id: '/myaccount',
+    path: '/myaccount',
+    getParentRoute: () => MainLayoutAuthenticatedRoute,
+  } as any)
 const MainLayoutAuthenticatedCartRoute =
   MainLayoutAuthenticatedCartRouteImport.update({
     id: '/cart',
@@ -80,21 +87,21 @@ const MainLayoutAuthenticatedCartRoute =
   } as any)
 const MainLayoutAuthenticatedMyaccountProfileRoute =
   MainLayoutAuthenticatedMyaccountProfileRouteImport.update({
-    id: '/myaccount/profile',
-    path: '/myaccount/profile',
-    getParentRoute: () => MainLayoutAuthenticatedRoute,
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
 const MainLayoutAuthenticatedMyaccountOrdersRoute =
   MainLayoutAuthenticatedMyaccountOrdersRouteImport.update({
-    id: '/myaccount/orders',
-    path: '/myaccount/orders',
-    getParentRoute: () => MainLayoutAuthenticatedRoute,
+    id: '/orders',
+    path: '/orders',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
 const MainLayoutAuthenticatedMyaccountAppointmentsRoute =
   MainLayoutAuthenticatedMyaccountAppointmentsRouteImport.update({
-    id: '/myaccount/appointments',
-    path: '/myaccount/appointments',
-    getParentRoute: () => MainLayoutAuthenticatedRoute,
+    id: '/appointments',
+    path: '/appointments',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
+  '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -120,6 +128,7 @@ export interface FileRoutesByTo {
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
+  '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -137,6 +146,7 @@ export interface FileRoutesById {
   '/_main-layout/categories': typeof MainLayoutCategoriesRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
   '/_main-layout/_authenticated/cart': typeof MainLayoutAuthenticatedCartRoute
+  '/_main-layout/_authenticated/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
   '/_main-layout/_authenticated/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/_main-layout/_authenticated/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/categories'
     | '/cart'
+    | '/myaccount'
     | '/product/$id'
     | '/myaccount/appointments'
     | '/myaccount/orders'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/categories'
     | '/cart'
+    | '/myaccount'
     | '/product/$id'
     | '/myaccount/appointments'
     | '/myaccount/orders'
@@ -183,6 +195,7 @@ export interface FileRouteTypes {
     | '/_main-layout/categories'
     | '/_main-layout/'
     | '/_main-layout/_authenticated/cart'
+    | '/_main-layout/_authenticated/myaccount'
     | '/_main-layout/product/$id'
     | '/_main-layout/_authenticated/myaccount/appointments'
     | '/_main-layout/_authenticated/myaccount/orders'
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutProductIdRouteImport
       parentRoute: typeof MainLayoutRoute
     }
+    '/_main-layout/_authenticated/myaccount': {
+      id: '/_main-layout/_authenticated/myaccount'
+      path: '/myaccount'
+      fullPath: '/myaccount'
+      preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountRouteImport
+      parentRoute: typeof MainLayoutAuthenticatedRoute
+    }
     '/_main-layout/_authenticated/cart': {
       id: '/_main-layout/_authenticated/cart'
       path: '/cart'
@@ -276,44 +296,59 @@ declare module '@tanstack/react-router' {
     }
     '/_main-layout/_authenticated/myaccount/profile': {
       id: '/_main-layout/_authenticated/myaccount/profile'
-      path: '/myaccount/profile'
+      path: '/profile'
       fullPath: '/myaccount/profile'
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountProfileRouteImport
-      parentRoute: typeof MainLayoutAuthenticatedRoute
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
     '/_main-layout/_authenticated/myaccount/orders': {
       id: '/_main-layout/_authenticated/myaccount/orders'
-      path: '/myaccount/orders'
+      path: '/orders'
       fullPath: '/myaccount/orders'
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountOrdersRouteImport
-      parentRoute: typeof MainLayoutAuthenticatedRoute
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
     '/_main-layout/_authenticated/myaccount/appointments': {
       id: '/_main-layout/_authenticated/myaccount/appointments'
-      path: '/myaccount/appointments'
+      path: '/appointments'
       fullPath: '/myaccount/appointments'
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRouteImport
-      parentRoute: typeof MainLayoutAuthenticatedRoute
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
   }
 }
 
-interface MainLayoutAuthenticatedRouteChildren {
-  MainLayoutAuthenticatedCartRoute: typeof MainLayoutAuthenticatedCartRoute
+interface MainLayoutAuthenticatedMyaccountRouteChildren {
   MainLayoutAuthenticatedMyaccountAppointmentsRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   MainLayoutAuthenticatedMyaccountOrdersRoute: typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   MainLayoutAuthenticatedMyaccountProfileRoute: typeof MainLayoutAuthenticatedMyaccountProfileRoute
 }
 
-const MainLayoutAuthenticatedRouteChildren: MainLayoutAuthenticatedRouteChildren =
+const MainLayoutAuthenticatedMyaccountRouteChildren: MainLayoutAuthenticatedMyaccountRouteChildren =
   {
-    MainLayoutAuthenticatedCartRoute: MainLayoutAuthenticatedCartRoute,
     MainLayoutAuthenticatedMyaccountAppointmentsRoute:
       MainLayoutAuthenticatedMyaccountAppointmentsRoute,
     MainLayoutAuthenticatedMyaccountOrdersRoute:
       MainLayoutAuthenticatedMyaccountOrdersRoute,
     MainLayoutAuthenticatedMyaccountProfileRoute:
       MainLayoutAuthenticatedMyaccountProfileRoute,
+  }
+
+const MainLayoutAuthenticatedMyaccountRouteWithChildren =
+  MainLayoutAuthenticatedMyaccountRoute._addFileChildren(
+    MainLayoutAuthenticatedMyaccountRouteChildren,
+  )
+
+interface MainLayoutAuthenticatedRouteChildren {
+  MainLayoutAuthenticatedCartRoute: typeof MainLayoutAuthenticatedCartRoute
+  MainLayoutAuthenticatedMyaccountRoute: typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
+}
+
+const MainLayoutAuthenticatedRouteChildren: MainLayoutAuthenticatedRouteChildren =
+  {
+    MainLayoutAuthenticatedCartRoute: MainLayoutAuthenticatedCartRoute,
+    MainLayoutAuthenticatedMyaccountRoute:
+      MainLayoutAuthenticatedMyaccountRouteWithChildren,
   }
 
 const MainLayoutAuthenticatedRouteWithChildren =
