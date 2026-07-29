@@ -26,6 +26,7 @@ import { Route as MainLayoutAuthenticatedCartRouteImport } from './routes/_main-
 import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './routes/_main-layout/_authenticated/myaccount/profile'
 import { Route as MainLayoutAuthenticatedMyaccountOrdersRouteImport } from './routes/_main-layout/_authenticated/myaccount/orders'
 import { Route as MainLayoutAuthenticatedMyaccountAppointmentsRouteImport } from './routes/_main-layout/_authenticated/myaccount/appointments'
+import { Route as MainLayoutAuthenticatedMyaccountAddressesRouteImport } from './routes/_main-layout/_authenticated/myaccount/addresses'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -116,6 +117,12 @@ const MainLayoutAuthenticatedMyaccountAppointmentsRoute =
     path: '/appointments',
     getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
+const MainLayoutAuthenticatedMyaccountAddressesRoute =
+  MainLayoutAuthenticatedMyaccountAddressesRouteImport.update({
+    id: '/addresses',
+    path: '/addresses',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainLayoutIndexRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -167,6 +176,7 @@ export interface FileRoutesById {
   '/_main-layout/_authenticated/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
   '/_main-layout/_authenticated/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
+  '/_main-layout/_authenticated/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/_main-layout/_authenticated/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/_main-layout/_authenticated/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/_main-layout/_authenticated/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/myaccount'
     | '/product/$id'
+    | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/myaccount'
     | '/product/$id'
+    | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
@@ -222,6 +234,7 @@ export interface FileRouteTypes {
     | '/_main-layout/_authenticated/checkout'
     | '/_main-layout/_authenticated/myaccount'
     | '/_main-layout/product/$id'
+    | '/_main-layout/_authenticated/myaccount/addresses'
     | '/_main-layout/_authenticated/myaccount/appointments'
     | '/_main-layout/_authenticated/myaccount/orders'
     | '/_main-layout/_authenticated/myaccount/profile'
@@ -355,10 +368,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRouteImport
       parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
+    '/_main-layout/_authenticated/myaccount/addresses': {
+      id: '/_main-layout/_authenticated/myaccount/addresses'
+      path: '/addresses'
+      fullPath: '/myaccount/addresses'
+      preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountAddressesRouteImport
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
+    }
   }
 }
 
 interface MainLayoutAuthenticatedMyaccountRouteChildren {
+  MainLayoutAuthenticatedMyaccountAddressesRoute: typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   MainLayoutAuthenticatedMyaccountAppointmentsRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   MainLayoutAuthenticatedMyaccountOrdersRoute: typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   MainLayoutAuthenticatedMyaccountProfileRoute: typeof MainLayoutAuthenticatedMyaccountProfileRoute
@@ -366,6 +387,8 @@ interface MainLayoutAuthenticatedMyaccountRouteChildren {
 
 const MainLayoutAuthenticatedMyaccountRouteChildren: MainLayoutAuthenticatedMyaccountRouteChildren =
   {
+    MainLayoutAuthenticatedMyaccountAddressesRoute:
+      MainLayoutAuthenticatedMyaccountAddressesRoute,
     MainLayoutAuthenticatedMyaccountAppointmentsRoute:
       MainLayoutAuthenticatedMyaccountAppointmentsRoute,
     MainLayoutAuthenticatedMyaccountOrdersRoute:
