@@ -27,6 +27,7 @@ import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './r
 import { Route as MainLayoutAuthenticatedMyaccountOrdersRouteImport } from './routes/_main-layout/_authenticated/myaccount/orders'
 import { Route as MainLayoutAuthenticatedMyaccountAppointmentsRouteImport } from './routes/_main-layout/_authenticated/myaccount/appointments'
 import { Route as MainLayoutAuthenticatedMyaccountAddressesRouteImport } from './routes/_main-layout/_authenticated/myaccount/addresses'
+import { Route as MainLayoutAuthenticatedCheckoutRedirectRouteImport } from './routes/_main-layout/_authenticated/checkout/redirect'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -123,6 +124,12 @@ const MainLayoutAuthenticatedMyaccountAddressesRoute =
     path: '/addresses',
     getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
+const MainLayoutAuthenticatedCheckoutRedirectRoute =
+  MainLayoutAuthenticatedCheckoutRedirectRouteImport.update({
+    id: '/redirect',
+    path: '/redirect',
+    getParentRoute: () => MainLayoutAuthenticatedCheckoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainLayoutIndexRoute
@@ -134,9 +141,10 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
-  '/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
+  '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -152,9 +160,10 @@ export interface FileRoutesByTo {
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
-  '/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
+  '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -173,9 +182,10 @@ export interface FileRoutesById {
   '/_main-layout/categories': typeof MainLayoutCategoriesRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
   '/_main-layout/_authenticated/cart': typeof MainLayoutAuthenticatedCartRoute
-  '/_main-layout/_authenticated/checkout': typeof MainLayoutAuthenticatedCheckoutRoute
+  '/_main-layout/_authenticated/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   '/_main-layout/_authenticated/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
+  '/_main-layout/_authenticated/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/_main-layout/_authenticated/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/_main-layout/_authenticated/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/_main-layout/_authenticated/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/myaccount'
     | '/product/$id'
+    | '/checkout/redirect'
     | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/myaccount'
     | '/product/$id'
+    | '/checkout/redirect'
     | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
     | '/_main-layout/_authenticated/checkout'
     | '/_main-layout/_authenticated/myaccount'
     | '/_main-layout/product/$id'
+    | '/_main-layout/_authenticated/checkout/redirect'
     | '/_main-layout/_authenticated/myaccount/addresses'
     | '/_main-layout/_authenticated/myaccount/appointments'
     | '/_main-layout/_authenticated/myaccount/orders'
@@ -375,8 +388,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountAddressesRouteImport
       parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
+    '/_main-layout/_authenticated/checkout/redirect': {
+      id: '/_main-layout/_authenticated/checkout/redirect'
+      path: '/redirect'
+      fullPath: '/checkout/redirect'
+      preLoaderRoute: typeof MainLayoutAuthenticatedCheckoutRedirectRouteImport
+      parentRoute: typeof MainLayoutAuthenticatedCheckoutRoute
+    }
   }
 }
+
+interface MainLayoutAuthenticatedCheckoutRouteChildren {
+  MainLayoutAuthenticatedCheckoutRedirectRoute: typeof MainLayoutAuthenticatedCheckoutRedirectRoute
+}
+
+const MainLayoutAuthenticatedCheckoutRouteChildren: MainLayoutAuthenticatedCheckoutRouteChildren =
+  {
+    MainLayoutAuthenticatedCheckoutRedirectRoute:
+      MainLayoutAuthenticatedCheckoutRedirectRoute,
+  }
+
+const MainLayoutAuthenticatedCheckoutRouteWithChildren =
+  MainLayoutAuthenticatedCheckoutRoute._addFileChildren(
+    MainLayoutAuthenticatedCheckoutRouteChildren,
+  )
 
 interface MainLayoutAuthenticatedMyaccountRouteChildren {
   MainLayoutAuthenticatedMyaccountAddressesRoute: typeof MainLayoutAuthenticatedMyaccountAddressesRoute
@@ -404,14 +439,15 @@ const MainLayoutAuthenticatedMyaccountRouteWithChildren =
 
 interface MainLayoutAuthenticatedRouteChildren {
   MainLayoutAuthenticatedCartRoute: typeof MainLayoutAuthenticatedCartRoute
-  MainLayoutAuthenticatedCheckoutRoute: typeof MainLayoutAuthenticatedCheckoutRoute
+  MainLayoutAuthenticatedCheckoutRoute: typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   MainLayoutAuthenticatedMyaccountRoute: typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
 }
 
 const MainLayoutAuthenticatedRouteChildren: MainLayoutAuthenticatedRouteChildren =
   {
     MainLayoutAuthenticatedCartRoute: MainLayoutAuthenticatedCartRoute,
-    MainLayoutAuthenticatedCheckoutRoute: MainLayoutAuthenticatedCheckoutRoute,
+    MainLayoutAuthenticatedCheckoutRoute:
+      MainLayoutAuthenticatedCheckoutRouteWithChildren,
     MainLayoutAuthenticatedMyaccountRoute:
       MainLayoutAuthenticatedMyaccountRouteWithChildren,
   }
