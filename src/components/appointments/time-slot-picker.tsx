@@ -12,6 +12,8 @@ interface TimeSlotPickerProps {
   selectedSlot: string | undefined
   selectedDate: Date | undefined
   onSelectSlot: (slot: string) => void
+  onConfirm?: () => void
+  showConfirmButton?: boolean
 }
 
 function formatTimeSlot(slot: string): string {
@@ -26,6 +28,8 @@ export function TimeSlotPicker({
   selectedSlot,
   selectedDate,
   onSelectSlot,
+  onConfirm,
+  showConfirmButton = true,
 }: TimeSlotPickerProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -78,21 +82,23 @@ export function TimeSlotPicker({
               </span>
             </div>
           </div>
-          <Button
-            className="bg-white text-primary hover:bg-white/90 dark:text-primary-foreground md:text-base"
-            onClick={() => {
-              if (!user) {
-                navigate({
-                  to: "/login",
-                  search: { redirect: "/appointments" },
-                })
-                return
-              }
-              // TODO: actual appointment booking logic
-            }}
-          >
-            Confirmar Reserva
-          </Button>
+          {showConfirmButton && (
+            <Button
+              className="bg-white text-primary hover:bg-white/90 dark:text-primary-foreground md:text-base"
+              onClick={() => {
+                if (!user) {
+                  navigate({
+                    to: "/login",
+                    search: { redirect: "/appointments" },
+                  })
+                  return
+                }
+                onConfirm?.()
+              }}
+            >
+              Confirmar Reserva
+            </Button>
+          )}
         </div>
       )}
     </div>

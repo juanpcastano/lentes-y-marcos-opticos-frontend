@@ -1,24 +1,4 @@
-# myaccount-appointments Specification
-
-## Purpose
-
-The MyAccount appointments feature provides authenticated users a page to view their appointment history. When the user has a pending appointment, it appears at the top of the page with a link to manage it on the public appointments page.
-
-## Requirements
-
-### Requirement: MyAccount appointments page route
-
-The system SHALL serve an authenticated appointments management page at `/myaccount/appointments`, mounted under the `_authenticated` layout, reusing the existing route file. The page SHALL follow the layout and styling of `/myaccount/orders` (max-w-2xl container, page title).
-
-#### Scenario: Authenticated user opens the page
-
-- **WHEN** an authenticated user navigates to `/myaccount/appointments`
-- **THEN** the page renders with a "Citas" title and the appointment history
-
-#### Scenario: Unauthenticated user is redirected
-
-- **WHEN** an unauthenticated user navigates to `/myaccount/appointments`
-- **THEN** the `_authenticated` layout enforces its existing redirect behavior
+## MODIFIED Requirements
 
 ### Requirement: User appointments data source
 
@@ -41,7 +21,7 @@ The system SHALL expose the list of the authenticated user's appointments throug
 
 ### Requirement: MyAccount appointments page layout
 
-The system SHALL render the MyAccount appointments page at `/myaccount/appointments` without tabs. The page SHALL display the user's completed appointment history. When the user has a pending appointment, the system SHALL render it at the top of the page as a card with a "Ver detalles" button that navigates to `/appointments`.
+The system SHALL render the MyAccount appointments page at `/myaccount/appointments` without tabs. The page SHALL display the user's completed appointment history. When the user has a pending appointment, the system SHALL render it at the top of the page as a highlighted card with a "Ver detalles" button that navigates to `/appointments`.
 
 #### Scenario: Page shows only history with no pending appointment
 

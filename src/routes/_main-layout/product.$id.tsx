@@ -1,8 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Loader2, ShoppingCart } from "lucide-react"
+import { useState } from "react"
 
 import createProductQueryOptions from "#/query-options/product"
+import createCartQueryOptions, { CART_QUERY_KEY } from "#/query-options/cart"
+import { addToCart } from "#/services/cart"
+import type { Cart } from "#/services/cart"
 import { Button } from "#/components/ui/button"
+import { ToastAction } from "#/components/ui/toast"
+import { toast } from "#/hooks/use-toast"
 import { ProductImageGallery } from "#/components/product-detail/product-image-gallery"
 import { ProductPrice } from "#/components/product-detail/product-price"
 import { StockIndicator } from "#/components/product-detail/stock-indicator"
@@ -17,11 +24,87 @@ function ProductDetailPage() {
   const { id } = Route.useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const [submitting, setSubmitting] = useState(false)
   const {
     data: product,
     isLoading,
     isError,
   } = useQuery(createProductQueryOptions(id))
+  const { data: cart } = useQuery({
+    ...createCartQueryOptions(),
+    enabled: !!user,
+  })
+
+  const addToCartMutation = useMutation({
+    mutationFn: () => addToCart(product!.id, 1),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
+      const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
+      if (previous && product) {
+        const updatedItems = [
+          ...previous.items,
+          {
+            productId: product.id,
+            name: product.name,
+            imageUrl: product.imageUrl,
+            unitPrice: product.price,
+            quantity: 1,
+            lineTotal: product.price,
+          },
+        ]
+        queryClient.setQueryData<Cart>(CART_QUERY_KEY, {
+          ...previous,
+          items: updatedItems,
+          subtotal: updatedItems.reduce((sum, i) => sum + i.lineTotal, 0),
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(CART_QUERY_KEY, ctx.previous)
+      }
+      toast({
+        variant: "destructive",
+        title: "No se pudo añadir el producto al carrito.",
+      })
+    },
+    onSuccess: () => {
+      toast({
+        variant: "success",
+        title: "Producto añadido al carrito",
+        description: product?.name,
+        action: (
+          <ToastAction
+            altText="Ver carrito"
+            onClick={() => navigate({ to: "/cart" })}
+          >
+            Ver carrito
+          </ToastAction>
+        ),
+      })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
+      setSubmitting(false)
+    },
+  })
+
+  const inCart = !!cart?.items.some((item) => item.productId === id)
+
+  function handleAddToCart() {
+    if (submitting || addToCartMutation.isPending) return
+    if (!user) {
+      navigate({
+        to: "/login",
+        search: { redirect: `/product/${id}` },
+      })
+      return
+    }
+    setSubmitting(true)
+    addToCartMutation.mutate()
+  }
 
   if (isLoading) {
     return (
@@ -112,22 +195,35 @@ function ProductDetailPage() {
             ))}
           </div>
 
-          <Button
-            size="lg"
-            className="mt-2 w-full sm:w-auto"
-            onClick={() => {
-              if (!user) {
-                navigate({
-                  to: "/login",
-                  search: { redirect: `/product/${id}` },
-                })
-                return
-              }
-              // TODO: actual add to cart logic
-            }}
-          >
-            Añadir al carrito
-          </Button>
+          {inCart ? (
+            <>
+              <p className="mt-2 text-sm text-muted-foreground">
+                El ítem ya ha sido añadido a tu carrito.
+              </p>
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <Link to="/cart">
+                  <ShoppingCart className="size-4" />
+                  Ver carrito
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="lg"
+              className="mt-2 w-full sm:w-auto"
+              disabled={submitting || addToCartMutation.isPending}
+              onClick={handleAddToCart}
+            >
+              {submitting || addToCartMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Añadiendo...
+                </>
+              ) : (
+                "Añadir al carrito"
+              )}
+            </Button>
+          )}
         </div>
       </div>
 

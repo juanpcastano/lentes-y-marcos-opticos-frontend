@@ -12,15 +12,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { logout } from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
+import createCartQueryOptions from "#/query-options/cart"
 
 const ActionsMenu = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const currentPath = useRouterState({ select: (s) => s.location.href })
+  const { data: cart } = useQuery({
+    ...createCartQueryOptions(),
+    enabled: !!user,
+  })
+  const cartCount = cart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0
 
   const guardNav = (to: string) => {
     if (!user) {
@@ -89,10 +95,19 @@ const ActionsMenu = () => {
       </div>
       <Button
         variant="ghost"
-        className="size-14"
+        className="relative size-14"
         onClick={() => guardNav("/cart")}
+        aria-label="Carrito"
       >
         <ShoppingCart className="size-8" />
+        {user && cartCount > 0 && (
+          <span
+            className="absolute -top-0.5 -right-0.5 flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground tabular-nums"
+            aria-label={`${cartCount} artículos en el carrito`}
+          >
+            {cartCount}
+          </span>
+        )}
       </Button>
     </div>
   )

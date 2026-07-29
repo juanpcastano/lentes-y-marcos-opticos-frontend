@@ -12,6 +12,7 @@ import { useEffect } from "react"
 import "../styles.css"
 import { ThemeProvider } from "#/components/theme-provider"
 import { TooltipProvider } from "#/components/ui/tooltip"
+import { Toaster } from "#/components/ui/toaster"
 import { AuthProvider } from "#/components/auth-provider"
 import { queryClient } from "#/lib/query-client"
 import { ME_QUERY_KEY } from "#/query-options/auth"
@@ -43,6 +44,7 @@ function RootComponent() {
           <ThemeProvider defaultTheme="system">
             <TooltipProvider>
               <Outlet />
+              <Toaster />
               <TanStackDevtools
                 config={{
                   position: "bottom-right",
