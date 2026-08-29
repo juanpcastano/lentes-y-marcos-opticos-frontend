@@ -10,10 +10,15 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
-import { signup, loginWithGoogleMock } from "#/services/auth"
+import {
+  signup,
+  loginWithGoogle,
+  GOOGLE_CLIENT_ID_VALUE,
+  isGoogleReady,
+} from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
 
 export function SignupForm({
@@ -36,10 +41,56 @@ export function SignupForm({
     },
   })
 
+  const googleButtonRef = useRef<HTMLDivElement>(null)
+
+  const googleMutation = useMutation({
+    mutationFn: (idToken: string) => loginWithGoogle(idToken),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+      navigate({ to: redirect ?? "/" })
+    },
+  })
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID_VALUE) return
+
+    const initGoogle = () => {
+      if (!isGoogleReady() || !googleButtonRef.current) return
+      window.google!.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID_VALUE,
+        callback: (response) => {
+          if (response.credential) {
+            googleMutation.mutate(response.credential)
+          }
+        },
+      })
+      window.google!.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+      })
+    }
+
+    if (isGoogleReady()) {
+      initGoogle()
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      if (isGoogleReady()) {
+        window.clearInterval(timer)
+        initGoogle()
+      }
+    }, 100)
+    return () => window.clearInterval(timer)
+  }, [redirect])
+
   const handleGoogleLogin = () => {
-    sessionStorage.setItem("auth_redirect", redirect ?? "/")
-    loginWithGoogleMock()
-    window.location.reload()
+    const btn = googleButtonRef.current?.querySelector<HTMLElement>(
+      'div[role="button"]',
+    )
+    btn?.click()
   }
 
   const handleBack = () => {
@@ -150,7 +201,26 @@ export function SignupForm({
                   </svg>
                   <span className="sr-only">Iniciar Sesión con Google</span>
                 </Button>
+                <div
+                  ref={googleButtonRef}
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: "-9999px",
+                    top: "0",
+                    width: "1px",
+                    height: "1px",
+                    overflow: "hidden",
+                  }}
+                />
               </Field>
+              {googleMutation.isError && (
+                <FieldDescription className="text-center text-destructive">
+                  {googleMutation.error instanceof Error
+                    ? googleMutation.error.message
+                    : "No se pudo iniciar sesión con Google"}
+                </FieldDescription>
+              )}
               <FieldDescription className="text-center">
                 Ya tienes una cuenta?{" "}
                 <Link to="/login" search={{ redirect: redirect ?? "/" }}>

@@ -46,7 +46,7 @@ export function PersonalInfoRead({ user }: { user: AuthUser }) {
           <InfoRow
             icon={<Phone className="size-4 text-muted-foreground" />}
             label="Teléfono"
-            value={user.phone}
+            value={user.phone ?? ""}
           />
         </div>
       </CardContent>

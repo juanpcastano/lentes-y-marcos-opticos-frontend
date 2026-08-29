@@ -21,12 +21,11 @@ interface PersonalInfoFormProps {
 export function PersonalInfoForm({ user }: PersonalInfoFormProps) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(user.name)
-  const [email, setEmail] = useState(user.email)
-  const [phone, setPhone] = useState(user.phone)
+  const [phone, setPhone] = useState(user.phone ?? "")
   const [saved, setSaved] = useState(false)
 
   const mutation = useMutation({
-    mutationFn: () => updateProfile({ name, email, phone }),
+    mutationFn: () => updateProfile({ name, phone }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
       setSaved(true)
@@ -40,8 +39,7 @@ export function PersonalInfoForm({ user }: PersonalInfoFormProps) {
 
   const handleCancel = () => {
     setName(user.name)
-    setEmail(user.email)
-    setPhone(user.phone)
+    setPhone(user.phone ?? "")
     setSaved(false)
   }
 
@@ -71,15 +69,7 @@ export function PersonalInfoForm({ user }: PersonalInfoFormProps) {
             </Field>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  handleDirty()
-                }}
-              />
+              <Input id="email" type="email" value={user.email} disabled />
             </Field>
             <Field>
               <FieldLabel htmlFor="phone">Teléfono</FieldLabel>

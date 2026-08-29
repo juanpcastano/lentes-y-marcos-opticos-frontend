@@ -45,7 +45,7 @@ function RouteComponent() {
           <PersonalInfoRead user={user} />
         )}
 
-        {editMode && user.authMethod === "email" && <PasswordForm />}
+        {editMode && user.hasPassword && <PasswordForm />}
 
         {editMode ? (
           notifs && <NotificationsForm preferences={notifs} />

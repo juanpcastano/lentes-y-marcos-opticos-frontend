@@ -21,7 +21,7 @@ export function PasswordForm() {
   const [changed, setChanged] = useState(false)
 
   const mutation = useMutation({
-    mutationFn: () => changePassword({ oldPassword, newPassword }),
+    mutationFn: () => changePassword({ currentPassword: oldPassword, newPassword }),
     onSuccess: () => {
       setOldPassword("")
       setNewPassword("")
