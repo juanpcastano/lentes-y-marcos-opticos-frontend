@@ -1,7 +1,8 @@
-import axios, {
+import axios from "axios"
+import type {
   AxiosError,
-  type AxiosInstance,
-  type InternalAxiosRequestConfig,
+  AxiosInstance,
+  InternalAxiosRequestConfig,
 } from "axios"
 
 let accessToken: string | null = null
@@ -94,7 +95,7 @@ client.interceptors.response.use(
     const status = error.response?.status ?? 0
     throw new ApiError(
       status,
-      body?.message ?? body?.error ?? error.message ?? "Request failed",
+      body?.message ?? body?.error ?? error.message,
       body?.details,
     )
   },

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
@@ -20,6 +21,7 @@ import {
   isGoogleReady,
 } from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
+import { ApiError } from "#/lib/api"
 
 export function SignupForm({
   redirect,
@@ -32,12 +34,23 @@ export function SignupForm({
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState("")
 
   const signupMutation = useMutation({
     mutationFn: () => signup({ name, email, phone, password }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
       navigate({ to: redirect ?? "/" })
+    },
+    onError: (e) => {
+      if (e instanceof ApiError && e.status === 409) {
+        setError("Este email ya está registrado")
+      } else if (e instanceof ApiError && e.status === 400 && e.details) {
+        setError(Object.values(e.details)[0] ?? "Revisa los datos ingresados")
+      } else {
+        setError("No pudimos crear tu cuenta. Intenta de nuevo.")
+      }
     },
   })
 
@@ -105,6 +118,19 @@ export function SignupForm({
             className="p-6 md:p-8"
             onSubmit={(e) => {
               e.preventDefault()
+              setError("")
+              if (password !== confirmPassword) {
+                setError("Las contraseñas no coinciden")
+                return
+              }
+              if (password.length < 8) {
+                setError("La contraseña debe tener al menos 8 caracteres")
+                return
+              }
+              if (!/[A-Z]/.test(password)) {
+                setError("La contraseña debe tener al menos una mayúscula")
+                return
+              }
               signupMutation.mutate()
             }}
           >
@@ -148,10 +174,11 @@ export function SignupForm({
                 </FieldDescription>
               </Field>
               <Field>
-                <FieldLabel htmlFor="phone">Teléfono (opcional)</FieldLabel>
+                <FieldLabel htmlFor="phone">Teléfono</FieldLabel>
                 <Input
                   id="phone"
                   type="tel"
+                  required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
@@ -175,7 +202,13 @@ export function SignupForm({
                     <FieldLabel htmlFor="confirm-password">
                       Confirmar Contraseña
                     </FieldLabel>
-                    <Input id="confirm-password" type="password" required />
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </Field>
                 </Field>
               </Field>
@@ -184,6 +217,7 @@ export function SignupForm({
                   {signupMutation.isPending ? "Creando..." : "Crear Cuenta"}
                 </Button>
               </Field>
+              {error && <FieldError className="text-center">{error}</FieldError>}
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 O ingresa con Google
               </FieldSeparator>

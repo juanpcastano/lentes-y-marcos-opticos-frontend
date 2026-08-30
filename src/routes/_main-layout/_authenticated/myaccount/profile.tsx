@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { createMeQueryOptions } from "#/query-options/auth"
 import { createNotificationPreferencesQueryOptions } from "#/query-options/notifications"
 import { DeleteAccount } from "#/components/profile/delete-account"
+import { GoogleAccountSection } from "#/components/profile/google-account-section"
 import { NotificationsForm } from "#/components/profile/notifications-form"
 import { NotificationsRead } from "#/components/profile/notifications-read"
 import { PasswordForm } from "#/components/profile/password-form"
@@ -45,7 +46,9 @@ function RouteComponent() {
           <PersonalInfoRead user={user} />
         )}
 
-        {editMode && user.hasPassword && <PasswordForm />}
+        {editMode && <PasswordForm hasPassword={user.hasPassword} />}
+
+        {editMode && <GoogleAccountSection user={user} />}
 
         {editMode ? (
           notifs && <NotificationsForm preferences={notifs} />

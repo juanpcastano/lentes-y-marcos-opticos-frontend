@@ -27,14 +27,14 @@ export interface ProfileUpdate {
   phone?: string
 }
 
-export interface PasswordChange {
-  currentPassword: string
-  newPassword: string
-}
-
 interface AuthResponse {
   accessToken: string
   user: User
+}
+
+interface LoginOptionsResponse {
+  hasPassword: boolean
+  hasGoogle: boolean
 }
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as
@@ -144,9 +144,20 @@ export async function requestPasswordReset(email: string): Promise<void> {
 export async function verifyPasswordReset(
   email: string,
   code: string,
+): Promise<void> {
+  await api.post("/auth/password/reset/verify", { email, code })
+}
+
+export async function confirmPasswordReset(
+  email: string,
+  code: string,
   newPassword: string,
 ): Promise<void> {
-  await api.post("/auth/password/reset/verify", { email, code, newPassword })
+  await api.post("/auth/password/reset/confirm", { email, code, newPassword })
+}
+
+export async function getLoginOptions(email: string): Promise<LoginOptionsResponse> {
+  return api.post<LoginOptionsResponse>("/auth/login/options", { email })
 }
 
 export async function requestLoginCode(email: string): Promise<void> {
@@ -169,6 +180,26 @@ export async function updateProfile(updates: ProfileUpdate): Promise<User> {
   return api.put<User>("/auth/profile", updates)
 }
 
-export async function changePassword(change: PasswordChange): Promise<void> {
-  await api.put("/auth/password", change)
+export async function requestPasswordCode(): Promise<void> {
+  await api.post("/auth/password/code-request")
+}
+
+export interface PasswordCodeStatus {
+  active: boolean
+  cooldownSeconds: number
+}
+
+export async function getPasswordCodeStatus(): Promise<PasswordCodeStatus> {
+  return api.get<PasswordCodeStatus>("/auth/password/code-status")
+}
+
+export async function verifyPasswordCode(code: string): Promise<void> {
+  await api.post("/auth/password/code-verify", { code })
+}
+
+export async function setPassword(
+  code: string,
+  newPassword: string,
+): Promise<void> {
+  await api.post("/auth/password/set", { code, newPassword })
 }
