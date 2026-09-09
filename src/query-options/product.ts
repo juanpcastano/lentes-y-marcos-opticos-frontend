@@ -16,6 +16,7 @@ export default function createProductQueryOptions<
   return queryOptions<ProductDetail, TError, TData>({
     queryKey: ["product", id],
     queryFn: () => fetchProductById(id),
+    retry: false,
     ...options,
   })
 }

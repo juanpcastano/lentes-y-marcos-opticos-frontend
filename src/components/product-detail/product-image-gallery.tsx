@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Carousel,
   CarouselContent,
@@ -6,6 +6,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "#/components/ui/carousel"
+import type { CarouselApi } from "#/components/ui/carousel"
 import { cn } from "#/lib/utils"
 
 function ZoomImage({ src, alt }: { src: string; alt: string }) {
@@ -57,11 +58,25 @@ export function ProductImageGallery({
 }) {
   const images = [imageUrl, ...additionalImages]
   const [activeIndex, setActiveIndex] = useState(0)
+  const [api, setApi] = useState<CarouselApi>()
+  const [canScroll, setCanScroll] = useState(false)
+
+  useEffect(() => {
+    if (!api) return
+    function update() {
+      setCanScroll(api.scrollSnapList().length > 1)
+    }
+    update()
+    api.on("reInit", update)
+    return () => {
+      api.off("reInit", update)
+    }
+  }, [api])
 
   return (
     <div className="flex flex-col gap-4">
       <ZoomImage src={images[activeIndex]} alt={name} />
-      <Carousel opts={{ align: "start" }} className="w-full">
+      <Carousel opts={{ align: "start" }} setApi={setApi} className="w-full">
         <CarouselContent>
           {images.map((img, i) => (
             <CarouselItem key={img + i} className="basis-1/3 sm:basis-1/4">
@@ -87,8 +102,12 @@ export function ProductImageGallery({
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        {canScroll && (
+          <>
+            <CarouselPrevious className="left-2 z-10 bg-background/80 shadow-sm backdrop-blur-sm dark:bg-background/80" />
+            <CarouselNext className="right-2 z-10 bg-background/80 shadow-sm backdrop-blur-sm dark:bg-background/80" />
+          </>
+        )}
       </Carousel>
     </div>
   )

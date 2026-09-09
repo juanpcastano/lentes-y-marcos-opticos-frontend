@@ -90,7 +90,7 @@ async function buildCart(persisted: PersistedLine[]): Promise<Cart> {
   if (persisted.length === 0) {
     return { id: CART_ID, items: [], subtotal: 0 }
   }
-  const products = await fetchProducts()
+  const { content: products } = await fetchProducts({ size: 50 })
   const { lines, cleaned } = resolveLines(persisted, products)
   if (cleaned.length !== persisted.length) {
     writePersistedCart(cleaned)

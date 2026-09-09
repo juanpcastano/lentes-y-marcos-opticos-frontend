@@ -12,7 +12,6 @@ import { ToastAction } from "#/components/ui/toast"
 import { toast } from "#/hooks/use-toast"
 import { ProductImageGallery } from "#/components/product-detail/product-image-gallery"
 import { ProductPrice } from "#/components/product-detail/product-price"
-import { StockIndicator } from "#/components/product-detail/stock-indicator"
 import { RelatedProducts } from "#/components/product-detail/related-products"
 import { useAuth } from "#/components/auth-provider"
 
@@ -166,8 +165,6 @@ function ProductDetailPage() {
             discountedPrice={product.discountedPrice}
             discountPercentage={product.discountPercentage}
           />
-
-          <StockIndicator stock={product.stock} />
 
           <p className="text-sm leading-relaxed text-muted-foreground">
             {product.description}

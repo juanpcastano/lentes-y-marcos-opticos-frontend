@@ -7,7 +7,7 @@ export interface CatalogProduct {
   material: string
   shape: string
   categories: string[]
-  badge?: "NUEVO" | "OFERTA"
+  badge?: "NUEVO" | "OFERTA" | null
 }
 
 const copFormatter = new Intl.NumberFormat("es-CO", {

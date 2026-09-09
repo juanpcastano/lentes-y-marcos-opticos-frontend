@@ -20,11 +20,13 @@ export function RelatedProducts({
   currentId: string
   categories: string[]
 }) {
-  const { data: products } = useQuery(createProductsQueryOptions())
+  const { data: products } = useQuery(
+    createProductsQueryOptions({ categories, size: 10 }),
+  )
 
   const related = useMemo(() => {
     if (!products) return []
-    return products
+    return products.content
       .filter((p) => p.id !== currentId)
       .filter((p) => p.categories.some((c) => categories.includes(c)))
       .slice(0, 10)

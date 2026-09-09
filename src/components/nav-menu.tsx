@@ -8,8 +8,9 @@ import {
   navigationMenuTriggerStyle,
 } from "./ui/navigation-menu"
 import { cn } from "#/lib/utils"
-import { FEATURED_CATEGORIES } from "#/services/featured-categories"
-import { FEATURED_BRANDS } from "#/services/featured-brands"
+
+const FEATURED_CATEGORY_NAMES = ["Marcos ópticos", "Gafas de sol", "Deportivas"]
+const FEATURED_BRAND_NAMES = ["Ray-Ban", "Oakley", "Persol"]
 
 export const NAV_LINKS = [
   { to: "/", label: "Inicio", hasDropdown: false },
@@ -42,7 +43,7 @@ const NavMenu = () => {
                       <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
                         Categorías Destacadas
                       </p>
-                      {FEATURED_CATEGORIES.map((category) => (
+                      {FEATURED_CATEGORY_NAMES.map((category) => (
                         <Link
                           key={category.name}
                           to="/catalog"
@@ -63,7 +64,7 @@ const NavMenu = () => {
                       <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
                         Marcas Destacadas
                       </p>
-                      {FEATURED_BRANDS.map((brand) => (
+                      {FEATURED_BRAND_NAMES.map((brand) => (
                         <Link
                           key={brand.name}
                           to="/catalog"
