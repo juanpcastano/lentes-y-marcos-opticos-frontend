@@ -108,10 +108,11 @@ function resolveLines(
     const cartLine = {
       productId: product?.id ?? line.productId,
       variantId: matchingVariant?.id ?? line.variantId,
-      variantName: line.variantName,
-      name: line.variantName
-        ? `${productName} - ${line.variantName}`
-        : productName,
+      variantName: matchingVariant?.variantName ?? line.variantName,
+      name:
+        (matchingVariant?.variantName ?? line.variantName)
+          ? `${productName} - ${matchingVariant?.variantName ?? line.variantName}`
+          : productName,
       imageUrl: line.imageUrl ?? product?.imageUrl ?? "",
       unitPrice,
       quantity,
@@ -171,9 +172,19 @@ async function buildCart(persisted: PersistedLine[]): Promise<Cart> {
           sameVariantName(line.variantName, variant.variantName),
         )
       : undefined
-    return matchingVariant?.id && matchingVariant.id !== line.variantId
-      ? { ...line, variantId: matchingVariant.id }
-      : line
+    if (!matchingVariant) return line
+    const nextVariantName = matchingVariant.variantName ?? line.variantName
+    if (
+      matchingVariant.id === line.variantId &&
+      nextVariantName === line.variantName
+    ) {
+      return line
+    }
+    return {
+      ...line,
+      variantId: matchingVariant.id ?? line.variantId,
+      variantName: nextVariantName,
+    }
   })
   if (rebound.some((line, index) => line !== persisted[index])) {
     writePersistedCart(rebound)
