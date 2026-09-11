@@ -156,9 +156,14 @@ function RouteComponent() {
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </Field>
-                    {error && <FieldError className="text-center">{error}</FieldError>}
+                    {error && (
+                      <FieldError className="text-center">{error}</FieldError>
+                    )}
                     <Field>
-                      <Button type="submit" disabled={requestMutation.isPending}>
+                      <Button
+                        type="submit"
+                        disabled={requestMutation.isPending}
+                      >
                         {requestMutation.isPending
                           ? "Enviando..."
                           : "Enviar código"}
@@ -175,7 +180,9 @@ function RouteComponent() {
                       Te enviamos un código a {email}
                     </FieldDescription>
                     <Field>
-                      <FieldLabel htmlFor="code">Código de 6 dígitos</FieldLabel>
+                      <FieldLabel htmlFor="code">
+                        Código de 6 dígitos
+                      </FieldLabel>
                       <Input
                         id="code"
                         type="text"
@@ -189,10 +196,14 @@ function RouteComponent() {
                         }
                       />
                     </Field>
-                    {error && <FieldError className="text-center">{error}</FieldError>}
+                    {error && (
+                      <FieldError className="text-center">{error}</FieldError>
+                    )}
                     <Field>
                       <Button type="submit" disabled={verifyMutation.isPending}>
-                        {verifyMutation.isPending ? "Verificando..." : "Verificar"}
+                        {verifyMutation.isPending
+                          ? "Verificando..."
+                          : "Verificar"}
                       </Button>
                     </Field>
                     <FieldDescription className="text-center">
@@ -253,9 +264,14 @@ function RouteComponent() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
                     </Field>
-                    {error && <FieldError className="text-center">{error}</FieldError>}
+                    {error && (
+                      <FieldError className="text-center">{error}</FieldError>
+                    )}
                     <Field>
-                      <Button type="submit" disabled={confirmMutation.isPending}>
+                      <Button
+                        type="submit"
+                        disabled={confirmMutation.isPending}
+                      >
                         {confirmMutation.isPending
                           ? "Guardando..."
                           : "Confirmar"}

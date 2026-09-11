@@ -1,5 +1,12 @@
 import { useState } from "react"
-import { Menu, Search, ShoppingCart, User, LogOut } from "lucide-react"
+import {
+  Menu,
+  Search,
+  ShoppingCart,
+  User,
+  LogOut,
+  ShieldCheck,
+} from "lucide-react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Sheet,
@@ -107,6 +114,16 @@ const MobileNavDrawer = () => {
             </div>
             {user ? (
               <div className="flex flex-col gap-1 border-t pt-2">
+                {user.isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
+                    onClick={handleClose}
+                  >
+                    <ShieldCheck className="size-4" />
+                    Panel admin
+                  </Link>
+                )}
                 <Link
                   to="/myaccount/profile"
                   className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"

@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Eye, Minus, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import createCartQueryOptions, { CART_QUERY_KEY } from "#/query-options/cart"
-import { updateQuantity, removeFromCart } from "#/services/cart"
+import { cartLineKey, updateQuantity, removeFromCart } from "#/services/cart"
 import type { Cart, CartLine } from "#/services/cart"
 import { formatCop } from "#/services/orders"
 import { Button } from "#/components/ui/button"
@@ -32,7 +32,7 @@ function RouteComponent() {
     )
   }
 
-  if (cart.items.length === 0) {
+  if (cart.items.length === 0 && cart.unavailableItems.length === 0) {
     return <EmptyCart />
   }
 
@@ -46,9 +46,30 @@ function RouteComponent() {
 
       <div className="flex flex-col gap-4">
         {cart.items.map((line) => (
-          <CartLineCard key={line.productId} line={line} />
+          <CartLineCard
+            key={cartLineKey(line.productId, line.variantId)}
+            line={line}
+          />
         ))}
       </div>
+
+      {cart.unavailableItems.length > 0 && (
+        <section className="mt-8 grid gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">No disponibles</h2>
+            <p className="text-sm text-muted-foreground">
+              Estos productos no están disponibles y no se incluyen en el total.
+            </p>
+          </div>
+          {cart.unavailableItems.map((line) => (
+            <CartLineCard
+              key={cartLineKey(line.productId, line.variantId)}
+              line={line}
+              unavailable
+            />
+          ))}
+        </section>
+      )}
 
       <div className="mt-6 flex flex-col gap-4 border-t pt-6">
         <div className="flex items-center justify-between">
@@ -57,32 +78,49 @@ function RouteComponent() {
             {formatCop(subtotal)}
           </span>
         </div>
-        <Button asChild size="lg" className="w-full sm:w-auto">
-          <Link to="/checkout">Ir a pagar</Link>
-        </Button>
+        {cart.items.length > 0 ? (
+          <Button asChild size="lg" className="w-full sm:w-auto">
+            <Link to="/checkout">Ir a pagar</Link>
+          </Button>
+        ) : (
+          <Button size="lg" className="w-full sm:w-auto" disabled>
+            Ir a pagar
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
-function CartLineCard({ line }: { line: CartLine }) {
+function CartLineCard({
+  line,
+  unavailable = false,
+}: {
+  line: CartLine
+  unavailable?: boolean
+}) {
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
 
   const updateMutation = useMutation({
-    mutationFn: (next: number) => updateQuantity(line.productId, next),
+    mutationFn: (next: number) =>
+      updateQuantity(line.productId, next, line.variantId),
     onMutate: async (next: number) => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
       if (previous) {
-        const updatedItems = previous.items.map((item) =>
-          item.productId === line.productId
-            ? { ...item, quantity: next, lineTotal: item.unitPrice * next }
-            : item,
-        )
+        const lineKey = cartLineKey(line.productId, line.variantId)
+        const updatedItems = unavailable
+          ? previous.items
+          : previous.items.map((item) =>
+              cartLineKey(item.productId, item.variantId) === lineKey
+                ? { ...item, quantity: next, lineTotal: item.unitPrice * next }
+                : item,
+            )
         queryClient.setQueryData<Cart>(CART_QUERY_KEY, {
           ...previous,
           items: updatedItems,
+          unavailableItems: previous.unavailableItems,
           subtotal: updatedItems.reduce((sum, i) => sum + i.lineTotal, 0),
         })
       }
@@ -100,17 +138,26 @@ function CartLineCard({ line }: { line: CartLine }) {
   })
 
   const removeMutation = useMutation({
-    mutationFn: () => removeFromCart(line.productId),
+    mutationFn: () => removeFromCart(line.productId, line.variantId),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
       if (previous) {
-        const updatedItems = previous.items.filter(
-          (item) => item.productId !== line.productId,
-        )
+        const lineKey = cartLineKey(line.productId, line.variantId)
+        const updatedItems = unavailable
+          ? previous.items
+          : previous.items.filter(
+              (item) => cartLineKey(item.productId, item.variantId) !== lineKey,
+            )
+        const updatedUnavailableItems = unavailable
+          ? previous.unavailableItems.filter(
+              (item) => cartLineKey(item.productId, item.variantId) !== lineKey,
+            )
+          : previous.unavailableItems
         queryClient.setQueryData<Cart>(CART_QUERY_KEY, {
           ...previous,
           items: updatedItems,
+          unavailableItems: updatedUnavailableItems,
           subtotal: updatedItems.reduce((sum, i) => sum + i.lineTotal, 0),
         })
       }
@@ -143,7 +190,7 @@ function CartLineCard({ line }: { line: CartLine }) {
   }
 
   return (
-    <Card>
+    <Card className={unavailable ? "border-dashed" : undefined}>
       <CardContent className="flex gap-4 p-4">
         <img
           src={line.imageUrl}
@@ -155,9 +202,22 @@ function CartLineCard({ line }: { line: CartLine }) {
           <div className="flex items-start justify-between gap-2">
             <div className="grid gap-0.5">
               <span className="font-medium leading-tight">{line.name}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {formatCop(line.unitPrice)}
-              </span>
+              <Button
+                asChild
+                variant="link"
+                size="sm"
+                className="h-auto w-fit p-0"
+              >
+                <Link to="/product/$id" params={{ id: line.productId }}>
+                  <Eye className="size-3.5" />
+                  Ver producto
+                </Link>
+              </Button>
+              {!unavailable && (
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {formatCop(line.unitPrice)}
+                </span>
+              )}
             </div>
             <Button
               variant="ghost"
@@ -171,14 +231,22 @@ function CartLineCard({ line }: { line: CartLine }) {
             </Button>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
-            <QuantityStepper
-              quantity={line.quantity}
-              onChange={handleQuantityChange}
-              disabled={blocked}
-            />
-            <span className="font-semibold tabular-nums">
-              {formatCop(line.lineTotal)}
-            </span>
+            {unavailable ? (
+              <span className="text-sm text-destructive">
+                {line.unavailableReason ?? "No disponible ahora mismo"}
+              </span>
+            ) : (
+              <QuantityStepper
+                quantity={line.quantity}
+                onChange={handleQuantityChange}
+                disabled={blocked}
+              />
+            )}
+            {!unavailable && (
+              <span className="font-semibold tabular-nums">
+                {formatCop(line.lineTotal)}
+              </span>
+            )}
           </div>
         </div>
       </CardContent>

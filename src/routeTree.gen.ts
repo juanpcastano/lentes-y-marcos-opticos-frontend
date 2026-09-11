@@ -12,17 +12,25 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MainLayoutRouteImport } from './routes/_main-layout'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MainLayoutIndexRouteImport } from './routes/_main-layout/index'
+import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
+import { Route as AdminBrandsRouteImport } from './routes/admin/brands'
 import { Route as MainLayoutCategoriesRouteImport } from './routes/_main-layout/categories'
 import { Route as MainLayoutCatalogRouteImport } from './routes/_main-layout/catalog'
 import { Route as MainLayoutBrandsRouteImport } from './routes/_main-layout/brands'
 import { Route as MainLayoutAppointmentsRouteImport } from './routes/_main-layout/appointments'
 import { Route as MainLayoutAuthenticatedRouteImport } from './routes/_main-layout/_authenticated'
+import { Route as AdminProductsIndexRouteImport } from './routes/admin/products/index'
+import { Route as AdminProductsNewRouteImport } from './routes/admin/products/new'
+import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as MainLayoutProductIdRouteImport } from './routes/_main-layout/product.$id'
 import { Route as MainLayoutAuthenticatedMyaccountRouteImport } from './routes/_main-layout/_authenticated/myaccount'
 import { Route as MainLayoutAuthenticatedCheckoutRouteImport } from './routes/_main-layout/_authenticated/checkout'
 import { Route as MainLayoutAuthenticatedCartRouteImport } from './routes/_main-layout/_authenticated/cart'
+import { Route as MainLayoutAuthenticatedMyaccountIndexRouteImport } from './routes/_main-layout/_authenticated/myaccount/index'
 import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './routes/_main-layout/_authenticated/myaccount/profile'
 import { Route as MainLayoutAuthenticatedMyaccountOrdersRouteImport } from './routes/_main-layout/_authenticated/myaccount/orders'
 import { Route as MainLayoutAuthenticatedMyaccountAppointmentsRouteImport } from './routes/_main-layout/_authenticated/myaccount/appointments'
@@ -44,14 +52,34 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MainLayoutRoute = MainLayoutRouteImport.update({
   id: '/_main-layout',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const MainLayoutIndexRoute = MainLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MainLayoutRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBrandsRoute = AdminBrandsRouteImport.update({
+  id: '/brands',
+  path: '/brands',
+  getParentRoute: () => AdminRoute,
 } as any)
 const MainLayoutCategoriesRoute = MainLayoutCategoriesRouteImport.update({
   id: '/categories',
@@ -77,6 +105,21 @@ const MainLayoutAuthenticatedRoute = MainLayoutAuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => MainLayoutRoute,
 } as any)
+const AdminProductsIndexRoute = AdminProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsNewRoute = AdminProductsNewRouteImport.update({
+  id: '/products/new',
+  path: '/products/new',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsIdRoute = AdminProductsIdRouteImport.update({
+  id: '/products/$id',
+  path: '/products/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const MainLayoutProductIdRoute = MainLayoutProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -99,6 +142,12 @@ const MainLayoutAuthenticatedCartRoute =
     id: '/cart',
     path: '/cart',
     getParentRoute: () => MainLayoutAuthenticatedRoute,
+  } as any)
+const MainLayoutAuthenticatedMyaccountIndexRoute =
+  MainLayoutAuthenticatedMyaccountIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
 const MainLayoutAuthenticatedMyaccountProfileRoute =
   MainLayoutAuthenticatedMyaccountProfileRouteImport.update({
@@ -133,6 +182,7 @@ const MainLayoutAuthenticatedCheckoutRedirectRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof MainLayoutIndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
@@ -140,15 +190,22 @@ export interface FileRoutesByFullPath {
   '/brands': typeof MainLayoutBrandsRoute
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
+  '/admin/brands': typeof AdminBrandsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/': typeof AdminIndexRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/products/new': typeof AdminProductsNewRoute
+  '/admin/products/': typeof AdminProductsIndexRoute
   '/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/myaccount/': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
@@ -159,19 +216,26 @@ export interface FileRoutesByTo {
   '/brands': typeof MainLayoutBrandsRoute
   '/catalog': typeof MainLayoutCatalogRoute
   '/categories': typeof MainLayoutCategoriesRoute
+  '/admin/brands': typeof AdminBrandsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin': typeof AdminIndexRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
-  '/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/product/$id': typeof MainLayoutProductIdRoute
+  '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/products/new': typeof AdminProductsNewRoute
+  '/admin/products': typeof AdminProductsIndexRoute
   '/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/myaccount': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main-layout': typeof MainLayoutRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
@@ -180,21 +244,29 @@ export interface FileRoutesById {
   '/_main-layout/brands': typeof MainLayoutBrandsRoute
   '/_main-layout/catalog': typeof MainLayoutCatalogRoute
   '/_main-layout/categories': typeof MainLayoutCategoriesRoute
+  '/admin/brands': typeof AdminBrandsRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/_main-layout/_authenticated/cart': typeof MainLayoutAuthenticatedCartRoute
   '/_main-layout/_authenticated/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
   '/_main-layout/_authenticated/myaccount': typeof MainLayoutAuthenticatedMyaccountRouteWithChildren
   '/_main-layout/product/$id': typeof MainLayoutProductIdRoute
+  '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/products/new': typeof AdminProductsNewRoute
+  '/admin/products/': typeof AdminProductsIndexRoute
   '/_main-layout/_authenticated/checkout/redirect': typeof MainLayoutAuthenticatedCheckoutRedirectRoute
   '/_main-layout/_authenticated/myaccount/addresses': typeof MainLayoutAuthenticatedMyaccountAddressesRoute
   '/_main-layout/_authenticated/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/_main-layout/_authenticated/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/_main-layout/_authenticated/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/_main-layout/_authenticated/myaccount/': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/signup'
@@ -202,15 +274,22 @@ export interface FileRouteTypes {
     | '/brands'
     | '/catalog'
     | '/categories'
+    | '/admin/brands'
+    | '/admin/categories'
+    | '/admin/'
     | '/cart'
     | '/checkout'
     | '/myaccount'
     | '/product/$id'
+    | '/admin/products/$id'
+    | '/admin/products/new'
+    | '/admin/products/'
     | '/checkout/redirect'
     | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
+    | '/myaccount/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -221,18 +300,25 @@ export interface FileRouteTypes {
     | '/brands'
     | '/catalog'
     | '/categories'
+    | '/admin/brands'
+    | '/admin/categories'
+    | '/admin'
     | '/cart'
     | '/checkout'
-    | '/myaccount'
     | '/product/$id'
+    | '/admin/products/$id'
+    | '/admin/products/new'
+    | '/admin/products'
     | '/checkout/redirect'
     | '/myaccount/addresses'
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
+    | '/myaccount'
   id:
     | '__root__'
     | '/_main-layout'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/signup'
@@ -241,20 +327,28 @@ export interface FileRouteTypes {
     | '/_main-layout/brands'
     | '/_main-layout/catalog'
     | '/_main-layout/categories'
+    | '/admin/brands'
+    | '/admin/categories'
     | '/_main-layout/'
+    | '/admin/'
     | '/_main-layout/_authenticated/cart'
     | '/_main-layout/_authenticated/checkout'
     | '/_main-layout/_authenticated/myaccount'
     | '/_main-layout/product/$id'
+    | '/admin/products/$id'
+    | '/admin/products/new'
+    | '/admin/products/'
     | '/_main-layout/_authenticated/checkout/redirect'
     | '/_main-layout/_authenticated/myaccount/addresses'
     | '/_main-layout/_authenticated/myaccount/appointments'
     | '/_main-layout/_authenticated/myaccount/orders'
     | '/_main-layout/_authenticated/myaccount/profile'
+    | '/_main-layout/_authenticated/myaccount/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   MainLayoutRoute: typeof MainLayoutRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -283,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_main-layout': {
       id: '/_main-layout'
       path: ''
@@ -290,12 +391,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_main-layout/': {
       id: '/_main-layout/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof MainLayoutIndexRouteImport
       parentRoute: typeof MainLayoutRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/brands': {
+      id: '/admin/brands'
+      path: '/brands'
+      fullPath: '/admin/brands'
+      preLoaderRoute: typeof AdminBrandsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_main-layout/categories': {
       id: '/_main-layout/categories'
@@ -332,6 +454,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutAuthenticatedRouteImport
       parentRoute: typeof MainLayoutRoute
     }
+    '/admin/products/': {
+      id: '/admin/products/'
+      path: '/products'
+      fullPath: '/admin/products/'
+      preLoaderRoute: typeof AdminProductsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products/new': {
+      id: '/admin/products/new'
+      path: '/products/new'
+      fullPath: '/admin/products/new'
+      preLoaderRoute: typeof AdminProductsNewRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products/$id': {
+      id: '/admin/products/$id'
+      path: '/products/$id'
+      fullPath: '/admin/products/$id'
+      preLoaderRoute: typeof AdminProductsIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_main-layout/product/$id': {
       id: '/_main-layout/product/$id'
       path: '/product/$id'
@@ -359,6 +502,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cart'
       preLoaderRoute: typeof MainLayoutAuthenticatedCartRouteImport
       parentRoute: typeof MainLayoutAuthenticatedRoute
+    }
+    '/_main-layout/_authenticated/myaccount/': {
+      id: '/_main-layout/_authenticated/myaccount/'
+      path: '/'
+      fullPath: '/myaccount/'
+      preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountIndexRouteImport
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
     '/_main-layout/_authenticated/myaccount/profile': {
       id: '/_main-layout/_authenticated/myaccount/profile'
@@ -418,6 +568,7 @@ interface MainLayoutAuthenticatedMyaccountRouteChildren {
   MainLayoutAuthenticatedMyaccountAppointmentsRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   MainLayoutAuthenticatedMyaccountOrdersRoute: typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   MainLayoutAuthenticatedMyaccountProfileRoute: typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  MainLayoutAuthenticatedMyaccountIndexRoute: typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 
 const MainLayoutAuthenticatedMyaccountRouteChildren: MainLayoutAuthenticatedMyaccountRouteChildren =
@@ -430,6 +581,8 @@ const MainLayoutAuthenticatedMyaccountRouteChildren: MainLayoutAuthenticatedMyac
       MainLayoutAuthenticatedMyaccountOrdersRoute,
     MainLayoutAuthenticatedMyaccountProfileRoute:
       MainLayoutAuthenticatedMyaccountProfileRoute,
+    MainLayoutAuthenticatedMyaccountIndexRoute:
+      MainLayoutAuthenticatedMyaccountIndexRoute,
   }
 
 const MainLayoutAuthenticatedMyaccountRouteWithChildren =
@@ -481,8 +634,29 @@ const MainLayoutRouteWithChildren = MainLayoutRoute._addFileChildren(
   MainLayoutRouteChildren,
 )
 
+interface AdminRouteChildren {
+  AdminBrandsRoute: typeof AdminBrandsRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminProductsIdRoute: typeof AdminProductsIdRoute
+  AdminProductsNewRoute: typeof AdminProductsNewRoute
+  AdminProductsIndexRoute: typeof AdminProductsIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminBrandsRoute: AdminBrandsRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminProductsIdRoute: AdminProductsIdRoute,
+  AdminProductsNewRoute: AdminProductsNewRoute,
+  AdminProductsIndexRoute: AdminProductsIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   MainLayoutRoute: MainLayoutRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,

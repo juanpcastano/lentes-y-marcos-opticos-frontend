@@ -1,5 +1,6 @@
 export interface CatalogProduct {
   id: string
+  isActive?: boolean
   imageUrl: string
   name: string
   brand: string

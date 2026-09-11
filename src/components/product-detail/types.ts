@@ -7,13 +7,14 @@ export interface ProductDetail extends CatalogProduct {
   discountPercentage: number
   description: string
   variants: ProductVariant[]
+  isActive: boolean
 }
 
 export interface ProductVariant {
-  id: string
-  variantName: string
-  variantValue: string
-  sku: string
-  priceAdjustment: number
+  id: string | null
+  variantName: string | null
+  sku: string | null
+  priceAdjustment: number | null
   imageUrl: string | null
+  isActive: boolean | null
 }

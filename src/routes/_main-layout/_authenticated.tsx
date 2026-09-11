@@ -3,9 +3,10 @@ import { createMeQueryOptions } from "#/query-options/auth"
 
 export const Route = createFileRoute("/_main-layout/_authenticated")({
   beforeLoad: async ({ context, location }) => {
-    const user = await context.queryClient.ensureQueryData(
-      createMeQueryOptions(),
-    )
+    const user = await context.queryClient.ensureQueryData({
+      ...createMeQueryOptions(),
+      revalidateIfStale: true,
+    })
     if (!user) {
       throw redirect({
         to: "/login",

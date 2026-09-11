@@ -38,8 +38,7 @@ interface LoginOptionsResponse {
 }
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as
-  | string
-  | undefined
+  string | undefined
 
 export const GOOGLE_CLIENT_ID_VALUE = GOOGLE_CLIENT_ID ?? ""
 
@@ -156,7 +155,9 @@ export async function confirmPasswordReset(
   await api.post("/auth/password/reset/confirm", { email, code, newPassword })
 }
 
-export async function getLoginOptions(email: string): Promise<LoginOptionsResponse> {
+export async function getLoginOptions(
+  email: string,
+): Promise<LoginOptionsResponse> {
   return api.post<LoginOptionsResponse>("/auth/login/options", { email })
 }
 

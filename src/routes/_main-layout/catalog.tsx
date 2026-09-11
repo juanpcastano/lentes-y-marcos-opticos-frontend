@@ -1,11 +1,6 @@
-import {
-  createFileRoute,
-  Link,
-  useSearch,
-  useNavigate,
-} from "@tanstack/react-router"
+import { createFileRoute, useSearch, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { ChevronDown } from "lucide-react"
 
@@ -14,12 +9,7 @@ import createCategoriesQueryOptions from "#/query-options/categories"
 import createBrandsQueryOptions from "#/query-options/brands"
 import { fetchProductFacets } from "#/services/products"
 import { ProductCard } from "#/components/catalog/product-card"
-import { FilterSection } from "#/components/catalog/filter-section"
-import { BrandFilter } from "#/components/catalog/brand-filter"
-import { PriceFilter } from "#/components/catalog/price-filter"
-import { MaterialFilter } from "#/components/catalog/material-filter"
-import { ShapeFilter } from "#/components/catalog/shape-filter"
-import { CategoryFilter } from "#/components/catalog/category-filter"
+import { ProductFilterFields } from "#/components/catalog/product-filter-fields"
 import { SortSelect } from "#/components/catalog/sort-select"
 import { ResultsCount } from "#/components/catalog/results-count"
 import { Button } from "#/components/ui/button"
@@ -53,6 +43,7 @@ const SORT_OPTIONS = [
 function CatalogPage() {
   const search = useSearch({ from: "/_main-layout/catalog" })
   const navigate = useNavigate({ from: "/catalog" })
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const { data: categories = [] } = useQuery(createCategoriesQueryOptions())
   const { data: brands = [] } = useQuery(createBrandsQueryOptions())
@@ -91,8 +82,6 @@ function CatalogPage() {
 
   const priceMin = facets?.minPrice ?? 0
   const priceMax = facets?.maxPrice ?? 0
-  const effectivePriceMin = search.priceMin ?? priceMin
-  const effectivePriceMax = search.priceMax ?? priceMax
 
   const updateSearch = (partial: Partial<typeof search>) => {
     navigate({
@@ -104,15 +93,21 @@ function CatalogPage() {
     })
   }
 
-  const toggleArray = (
-    key: "brands" | "materials" | "shapes" | "categories",
-    value: string,
-  ) => {
-    const current = search[key]
-    const next = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value]
-    updateSearch({ [key]: next })
+  function Filters() {
+    return (
+      <ProductFilterFields
+        options={{
+          brands: allBrands,
+          categories: allCategories,
+          materials: allMaterials,
+          shapes: allShapes,
+          priceMin,
+          priceMax,
+        }}
+        values={search}
+        onChange={updateSearch}
+      />
+    )
   }
 
   return (
@@ -127,88 +122,23 @@ function CatalogPage() {
               </p>
             </div>
 
-            <Collapsible className="lg:contents">
+            <Collapsible
+              open={mobileFiltersOpen}
+              onOpenChange={setMobileFiltersOpen}
+              className="lg:contents lg:hidden"
+            >
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border px-4 py-3 font-medium lg:hidden">
                 Filtros
                 <ChevronDown className="size-4 transition-transform data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
 
               <CollapsibleContent className="space-y-6 pt-4 lg:!block lg:pt-0">
-                <div className="space-y-6">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() =>
-                      updateSearch({
-                        brands: [],
-                        priceMin: undefined,
-                        priceMax: undefined,
-                        materials: [],
-                        shapes: [],
-                        categories: [],
-                      })
-                    }
-                  >
-                    Limpiar filtros
-                  </Button>
-
-                  <FilterSection title="Marca">
-                    <BrandFilter
-                      brands={allBrands}
-                      selected={search.brands}
-                      onToggle={(b) => toggleArray("brands", b)}
-                    />
-                    <Link
-                      to="/brands"
-                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      Ver todas
-                    </Link>
-                  </FilterSection>
-
-                  <FilterSection title="Categoría">
-                    <CategoryFilter
-                      categories={allCategories}
-                      selected={search.categories}
-                      onToggle={(c) => toggleArray("categories", c)}
-                    />
-                    <Link
-                      to="/categories"
-                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-                    >
-                      Ver todas
-                    </Link>
-                  </FilterSection>
-
-                  <FilterSection title="Material">
-                    <MaterialFilter
-                      materials={allMaterials}
-                      selected={search.materials}
-                      onToggle={(m) => toggleArray("materials", m)}
-                    />
-                  </FilterSection>
-
-                  <FilterSection title="Forma">
-                    <ShapeFilter
-                      shapes={allShapes}
-                      selected={search.shapes}
-                      onToggle={(s) => toggleArray("shapes", s)}
-                    />
-                  </FilterSection>
-
-                  <FilterSection title="Precio">
-                    <PriceFilter
-                      min={priceMin}
-                      max={priceMax}
-                      value={[effectivePriceMin, effectivePriceMax]}
-                      onChange={(v) =>
-                        updateSearch({ priceMin: v[0], priceMax: v[1] })
-                      }
-                    />
-                  </FilterSection>
-                </div>
+                <Filters />
               </CollapsibleContent>
             </Collapsible>
+            <div className="hidden lg:block">
+              <Filters />
+            </div>
           </div>
         </aside>
 

@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -8,81 +10,131 @@ import {
   navigationMenuTriggerStyle,
 } from "./ui/navigation-menu"
 import { cn } from "#/lib/utils"
+import createFeaturedBrandsQueryOptions from "#/query-options/featured-brands"
+import createFeaturedCategoriesQueryOptions from "#/query-options/featured-categories"
 
-const FEATURED_CATEGORY_NAMES = ["Marcos ópticos", "Gafas de sol", "Deportivas"]
-const FEATURED_BRAND_NAMES = ["Ray-Ban", "Oakley", "Persol"]
+type FilterKey = "categories" | "brands"
 
-export const NAV_LINKS = [
-  { to: "/", label: "Inicio", hasDropdown: false },
-  { to: "/catalog", label: "Catálogo", hasDropdown: true },
-  { to: "/appointments", label: "Agendar Cita", hasDropdown: false },
-] as const
+type DropdownSection = {
+  title: string
+  filter: FilterKey
+  allTo: "/categories" | "/brands"
+  allLabel: string
+}
+
+type NavLink = {
+  to: "/" | "/catalog" | "/appointments"
+  label: string
+  dropdown?: {
+    sections: DropdownSection[]
+    linkLabel: string
+  }
+}
+
+export const NAV_LINKS: NavLink[] = [
+  { to: "/", label: "Inicio" },
+  {
+    to: "/catalog",
+    label: "Catálogo",
+    dropdown: {
+      linkLabel: "Ver todo el catálogo",
+      sections: [
+        {
+          title: "Categorías destacadas",
+          filter: "categories",
+          allTo: "/categories",
+          allLabel: "Ver todas las categorías",
+        },
+        {
+          title: "Marcas destacadas",
+          filter: "brands",
+          allTo: "/brands",
+          allLabel: "Ver todas las marcas",
+        },
+      ],
+    },
+  },
+  { to: "/appointments", label: "Agendar Cita" },
+]
+
+function NavDropdown({
+  sections,
+  linkLabel,
+  featured,
+}: {
+  sections: DropdownSection[]
+  linkLabel: string
+  featured: Record<FilterKey, { name: string }[]>
+}) {
+  return (
+    <NavigationMenuContent>
+      <div className="grid min-w-[320px] grid-cols-2 gap-6 bg-popover p-4">
+        <Link
+          to="/catalog"
+          className="col-span-2 rounded-md px-2 py-1 text-sm font-semibold text-primary hover:bg-secondary"
+        >
+          {linkLabel}
+        </Link>
+        {sections.map((section) => (
+          <div key={section.filter} className="flex flex-col gap-1">
+            <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
+              {section.title}
+            </p>
+            {featured[section.filter].map((item) => (
+              <Link
+                key={item.name}
+                to="/catalog"
+                search={{ [section.filter]: [item.name] }}
+                className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                {item.name}
+              </Link>
+            ))}
+            <Link
+              to={section.allTo}
+              className="mt-1 px-2 text-sm text-primary hover:underline"
+            >
+              {section.allLabel}
+            </Link>
+          </div>
+        ))}
+      </div>
+    </NavigationMenuContent>
+  )
+}
 
 const NavMenu = () => {
+  const navigate = useNavigate()
+  const [menuValue, setMenuValue] = useState<string>()
+  const { data: categories = [] } = useQuery(
+    createFeaturedCategoriesQueryOptions(),
+  )
+  const { data: brands = [] } = useQuery(createFeaturedBrandsQueryOptions())
+
+  const featured = { categories, brands }
+
   return (
     <div className="hidden lg:block">
-      <NavigationMenu>
+      <NavigationMenu value={menuValue} onValueChange={setMenuValue}>
         <NavigationMenuList>
           {NAV_LINKS.map((link) =>
-            link.hasDropdown ? (
+            link.dropdown ? (
               <NavigationMenuItem key={link.to}>
-                <NavigationMenuTrigger>
-                  <Link
-                    to={link.to}
-                    className="text-lg"
-                    activeProps={{
-                      className: "font-bold underline underline-offset-4",
-                    }}
-                  >
-                    {link.label}
-                  </Link>
+                <NavigationMenuTrigger
+                  className="text-lg"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    setMenuValue(undefined)
+                    navigate({ to: link.to })
+                  }}
+                >
+                  {link.label}
                 </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid min-w-[320px] grid-cols-2 gap-6 p-4 bg-popover">
-                    <div className="flex flex-col gap-1">
-                      <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
-                        Categorías Destacadas
-                      </p>
-                      {FEATURED_CATEGORY_NAMES.map((category) => (
-                        <Link
-                          key={category.name}
-                          to="/catalog"
-                          search={{ categories: [category.name] }}
-                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary hover:text-background"
-                        >
-                          {category.name}
-                        </Link>
-                      ))}
-                      <Link
-                        to="/categories"
-                        className="mt-1 px-2 text-sm text-primary hover:underline"
-                      >
-                        Ver todas las categorías
-                      </Link>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="mb-1 px-2 text-md font-bold text-muted-foreground">
-                        Marcas Destacadas
-                      </p>
-                      {FEATURED_BRAND_NAMES.map((brand) => (
-                        <Link
-                          key={brand.name}
-                          to="/catalog"
-                          search={{ brands: [brand.name] }}
-                          className="rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary hover:text-background"
-                        >
-                          {brand.name}
-                        </Link>
-                      ))}
-                      <Link
-                        to="/brands"
-                        className="mt-1 px-2 text-sm text-primary hover:underline"
-                      >
-                        Ver todas las marcas
-                      </Link>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
+                <NavDropdown
+                  sections={link.dropdown.sections}
+                  linkLabel={link.dropdown.linkLabel}
+                  featured={featured}
+                />
               </NavigationMenuItem>
             ) : (
               <NavigationMenuItem key={link.to}>

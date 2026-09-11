@@ -39,8 +39,8 @@ export function SignupForm({
 
   const signupMutation = useMutation({
     mutationFn: () => signup({ name, email, phone, password }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    onSuccess: (user) => {
+      queryClient.setQueryData(ME_QUERY_KEY, user)
       navigate({ to: redirect ?? "/" })
     },
     onError: (e) => {
@@ -58,8 +58,8 @@ export function SignupForm({
 
   const googleMutation = useMutation({
     mutationFn: (idToken: string) => loginWithGoogle(idToken),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    onSuccess: (user) => {
+      queryClient.setQueryData(ME_QUERY_KEY, user)
       navigate({ to: redirect ?? "/" })
     },
   })
@@ -100,9 +100,8 @@ export function SignupForm({
   }, [redirect])
 
   const handleGoogleLogin = () => {
-    const btn = googleButtonRef.current?.querySelector<HTMLElement>(
-      'div[role="button"]',
-    )
+    const btn =
+      googleButtonRef.current?.querySelector<HTMLElement>('div[role="button"]')
     btn?.click()
   }
 
@@ -217,7 +216,9 @@ export function SignupForm({
                   {signupMutation.isPending ? "Creando..." : "Crear Cuenta"}
                 </Button>
               </Field>
-              {error && <FieldError className="text-center">{error}</FieldError>}
+              {error && (
+                <FieldError className="text-center">{error}</FieldError>
+              )}
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 O ingresa con Google
               </FieldSeparator>

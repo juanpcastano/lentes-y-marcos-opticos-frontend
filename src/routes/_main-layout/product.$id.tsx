@@ -5,10 +5,26 @@ import { useState } from "react"
 
 import createProductQueryOptions from "#/query-options/product"
 import createCartQueryOptions, { CART_QUERY_KEY } from "#/query-options/cart"
-import { addToCart } from "#/services/cart"
+import { addToCart, cartLineKey } from "#/services/cart"
 import type { Cart } from "#/services/cart"
+import { formatCop } from "#/services/orders"
 import { Button } from "#/components/ui/button"
-import { ToastAction } from "#/components/ui/toast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select"
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "#/components/ui/sheet"
 import { toast } from "#/hooks/use-toast"
 import { ProductImageGallery } from "#/components/product-detail/product-image-gallery"
 import { ProductPrice } from "#/components/product-detail/product-price"
@@ -25,6 +41,10 @@ function ProductDetailPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null,
+  )
+  const [cartSheetOpen, setCartSheetOpen] = useState(false)
   const {
     data: product,
     isLoading,
@@ -34,9 +54,32 @@ function ProductDetailPage() {
     ...createCartQueryOptions(),
     enabled: !!user,
   })
+  const availableVariants =
+    product?.variants.filter(
+      (variant) => variant.isActive !== false && variant.id !== null,
+    ) ?? []
+  const selectedVariant =
+    availableVariants.find((variant) => variant.id === selectedVariantId) ??
+    availableVariants[0]
+  const variantPrice =
+    (product?.price ?? 0) + (selectedVariant?.priceAdjustment ?? 0)
 
   const addToCartMutation = useMutation({
-    mutationFn: () => addToCart(product!.id, 1),
+    mutationFn: () =>
+      addToCart(
+        product!.id,
+        1,
+        selectedVariant?.id
+          ? {
+              id: selectedVariant.id,
+              name: selectedVariant.variantName ?? "Variante",
+              productName: product!.name,
+              imageUrl: selectedVariant.imageUrl,
+              price: variantPrice,
+            }
+          : undefined,
+        product!.name,
+      ),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
@@ -47,9 +90,13 @@ function ProductDetailPage() {
             productId: product.id,
             name: product.name,
             imageUrl: product.imageUrl,
-            unitPrice: product.price,
+            variantId: selectedVariant?.id ?? undefined,
+            variantName: selectedVariant
+              ? (selectedVariant.variantName ?? "Variante")
+              : undefined,
+            unitPrice: variantPrice,
             quantity: 1,
-            lineTotal: product.price,
+            lineTotal: variantPrice,
           },
         ]
         queryClient.setQueryData<Cart>(CART_QUERY_KEY, {
@@ -69,31 +116,21 @@ function ProductDetailPage() {
         title: "No se pudo añadir el producto al carrito.",
       })
     },
-    onSuccess: () => {
-      toast({
-        variant: "success",
-        title: "Producto añadido al carrito",
-        description: product?.name,
-        action: (
-          <ToastAction
-            altText="Ver carrito"
-            onClick={() => navigate({ to: "/cart" })}
-          >
-            Ver carrito
-          </ToastAction>
-        ),
-      })
-    },
+    onSuccess: () => setCartSheetOpen(true),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
       setSubmitting(false)
     },
   })
 
-  const inCart = !!cart?.items.some((item) => item.productId === id)
+  const selectedLineKey = cartLineKey(id, selectedVariant?.id ?? undefined)
+  const inCart = !!cart?.items.some(
+    (item) => cartLineKey(item.productId, item.variantId) === selectedLineKey,
+  )
 
   function handleAddToCart() {
     if (submitting || addToCartMutation.isPending) return
+    if (!product?.isActive) return
     if (!user) {
       navigate({
         to: "/login",
@@ -161,8 +198,12 @@ function ProductDetailPage() {
           </h1>
 
           <ProductPrice
-            originalPrice={product.originalPrice}
-            discountedPrice={product.discountedPrice}
+            originalPrice={
+              product.originalPrice + (selectedVariant?.priceAdjustment ?? 0)
+            }
+            discountedPrice={
+              product.discountedPrice + (selectedVariant?.priceAdjustment ?? 0)
+            }
             discountPercentage={product.discountPercentage}
           />
 
@@ -181,6 +222,28 @@ function ProductDetailPage() {
             </div>
           </dl>
 
+          {availableVariants.length > 0 && (
+            <div className="grid gap-2 text-sm font-medium">
+              <span>Variante</span>
+              <Select
+                value={selectedVariant?.id ?? undefined}
+                onValueChange={setSelectedVariantId}
+                disabled={availableVariants.length === 1}
+              >
+                <SelectTrigger className="w-full font-normal">
+                  <SelectValue placeholder="Selecciona una variante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVariants.map((variant) => (
+                    <SelectItem key={variant.id} value={variant.id ?? ""}>
+                      {variant.variantName ?? "Variante"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             {product.categories.map((category) => (
               <span
@@ -192,37 +255,73 @@ function ProductDetailPage() {
             ))}
           </div>
 
-          {inCart ? (
-            <>
-              <p className="mt-2 text-sm text-muted-foreground">
-                El ítem ya ha sido añadido a tu carrito.
-              </p>
-              <Button asChild size="lg" className="w-full sm:w-auto">
+          <Button
+            size="lg"
+            className="mt-2 w-full sm:w-auto"
+            disabled={
+              !product.isActive || submitting || addToCartMutation.isPending
+            }
+            onClick={handleAddToCart}
+          >
+            {!product.isActive ? (
+              "No disponible ahora mismo"
+            ) : submitting || addToCartMutation.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Añadiendo...
+              </>
+            ) : (
+              "Añadir al carrito"
+            )}
+          </Button>
+          {inCart && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>El ítem ya ha sido añadido a tu carrito.</span>
+              <Button asChild variant="link" className="h-auto p-0">
                 <Link to="/cart">
                   <ShoppingCart className="size-4" />
                   Ver carrito
                 </Link>
               </Button>
-            </>
-          ) : (
-            <Button
-              size="lg"
-              className="mt-2 w-full sm:w-auto"
-              disabled={submitting || addToCartMutation.isPending}
-              onClick={handleAddToCart}
-            >
-              {submitting || addToCartMutation.isPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Añadiendo...
-                </>
-              ) : (
-                "Añadir al carrito"
-              )}
-            </Button>
+            </div>
           )}
         </div>
       </div>
+
+      <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Producto añadido al carrito</SheetTitle>
+            <SheetDescription>
+              Revisa el artículo añadido antes de continuar comprando.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex gap-4 px-6">
+            <img
+              src={selectedVariant?.imageUrl ?? product.imageUrl}
+              alt={product.name}
+              className="size-20 rounded-xl object-cover"
+            />
+            <div className="grid gap-1">
+              <p className="font-medium">{product.name}</p>
+              {selectedVariant && (
+                <p className="text-sm text-muted-foreground">
+                  {selectedVariant.variantName ?? "Variante"}
+                </p>
+              )}
+              <p className="text-sm font-medium">{formatCop(variantPrice)}</p>
+            </div>
+          </div>
+          <SheetFooter>
+            <Button asChild>
+              <Link to="/cart">Ver carrito</Link>
+            </Button>
+            <SheetClose asChild>
+              <Button variant="outline">Seguir comprando</Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <RelatedProducts currentId={product.id} categories={product.categories} />
     </div>

@@ -41,18 +41,20 @@ export function FeaturedBrands() {
 
       {/* Cards grid - right-side dominant */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:grid-rows-2 md:h-[28rem]">
-        {/* Featured brand (big) - first on mobile, right on desktop */}
-        <div className="h-56 md:h-full md:row-span-2 md:order-2">
-          <FeaturedBrandCard brand={brands[0]} />
-        </div>
-        {/* Small brand 1 - left top on desktop */}
-        <div className="h-56 md:h-full md:order-1">
-          <FeaturedBrandCard brand={brands[1]} />
-        </div>
-        {/* Small brand 2 - left bottom on desktop */}
-        <div className="h-56 md:h-full md:order-3">
-          <FeaturedBrandCard brand={brands[2]} />
-        </div>
+        {brands.slice(0, 3).map((brand, index) => (
+          <div
+            key={brand.name}
+            className={`h-56 md:h-full ${
+              index === 0
+                ? "md:row-span-2 md:order-2"
+                : index === 1
+                  ? "md:order-1"
+                  : "md:order-3"
+            }`}
+          >
+            <FeaturedBrandCard brand={brand} />
+          </div>
+        ))}
       </div>
     </section>
   )

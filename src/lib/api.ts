@@ -30,7 +30,11 @@ export class ApiError extends Error {
   status: number
   details?: Record<string, string>
 
-  constructor(status: number, message: string, details?: Record<string, string>) {
+  constructor(
+    status: number,
+    message: string,
+    details?: Record<string, string>,
+  ) {
     super(message)
     this.name = "ApiError"
     this.status = status
@@ -109,6 +113,9 @@ export const api = {
 
   put: <T>(path: string, body?: unknown) =>
     client.put<T>(path, body).then((r) => r.data),
+
+  patch: <T>(path: string, body?: unknown) =>
+    client.patch<T>(path, body).then((r) => r.data),
 
   delete: <T>(path: string) => client.delete<T>(path).then((r) => r.data),
 

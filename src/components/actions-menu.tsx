@@ -1,4 +1,4 @@
-import { Search, ShoppingCart, User, LogOut } from "lucide-react"
+import { Search, ShoppingCart, User, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "./ui/button"
 import { ButtonGroup } from "./ui/button-group"
 import { Input } from "./ui/input"
@@ -43,10 +43,10 @@ const ActionsMenu = () => {
   }
 
   return (
-    <div className="flex gap-5">
+    <div className="flex gap-5 ml-5">
       <div className="hidden lg:flex gap-5">
         <ButtonGroup>
-          <Input placeholder="Buscar..." className="h-full" />
+          <Input placeholder="Buscar..." className="h-full min-w-21" />
           <Button variant="outline" className="h-full" aria-label="Search">
             <Search className="size-8" />
           </Button>
@@ -71,6 +71,17 @@ const ActionsMenu = () => {
                   <Link to="/myaccount/appointments">Mis Citas</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {user.isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">
+                        Panel admin
+                        <ShieldCheck className="size-4" />
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                   <LogOut className="size-4" />
                   Cerrar Sesión

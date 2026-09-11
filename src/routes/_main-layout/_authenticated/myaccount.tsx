@@ -8,9 +8,13 @@ import { useQueryClient } from "@tanstack/react-query"
 import { UserCircle, ShoppingBag, Calendar, MapPin, LogOut } from "lucide-react"
 import { logout } from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
+import { LayoutErrorPage } from "#/components/layout-error-page"
 
 export const Route = createFileRoute("/_main-layout/_authenticated/myaccount")({
   component: RouteComponent,
+  notFoundComponent: () => (
+    <LayoutErrorPage backTo="/myaccount" section="tu cuenta" />
+  ),
 })
 
 const navItems = [

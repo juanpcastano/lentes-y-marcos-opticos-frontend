@@ -9,7 +9,8 @@ import createAddressesQueryOptions, {
   useAddAddress,
 } from "#/query-options/addresses"
 import createShippingDatesQueryOptions from "#/query-options/shipping-dates"
-import { createOrder, formatCop  } from "#/services/orders"
+import { createOrder, formatCop } from "#/services/orders"
+import { cartLineKey } from "#/services/cart"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 import { Input } from "#/components/ui/input"
@@ -320,7 +321,7 @@ function RouteComponent() {
           <CardContent className="flex flex-col gap-2">
             {cart.items.map((item) => (
               <div
-                key={item.productId}
+                key={cartLineKey(item.productId, item.variantId)}
                 className="flex justify-between text-sm"
               >
                 <span className="text-muted-foreground">

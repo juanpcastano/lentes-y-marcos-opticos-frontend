@@ -102,9 +102,8 @@ export function GoogleAccountSection({ user }: GoogleAccountSectionProps) {
   }, [user.hasGoogle])
 
   const handleLinkGoogle = () => {
-    const btn = googleButtonRef.current?.querySelector<HTMLElement>(
-      'div[role="button"]',
-    )
+    const btn =
+      googleButtonRef.current?.querySelector<HTMLElement>('div[role="button"]')
     btn?.click()
   }
 
@@ -191,7 +190,9 @@ export function GoogleAccountSection({ user }: GoogleAccountSectionProps) {
 
           {user.hasGoogle && !user.hasPassword && (
             <>
-              <FieldDescription>Tu cuenta está vinculada a Google.</FieldDescription>
+              <FieldDescription>
+                Tu cuenta está vinculada a Google.
+              </FieldDescription>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span tabIndex={0} className="inline-block">

@@ -41,15 +41,14 @@ export function FeaturedCategories() {
 
       {/* Cards grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:grid-rows-2 md:h-[28rem]">
-        <div className="h-56 md:h-full md:row-span-2">
-          <FeaturedCategoryCard category={categories[0]} />
-        </div>
-        <div className="h-56 md:h-full">
-          <FeaturedCategoryCard category={categories[1]} />
-        </div>
-        <div className="h-56 md:h-full">
-          <FeaturedCategoryCard category={categories[2]} />
-        </div>
+        {categories.slice(0, 3).map((category, index) => (
+          <div
+            key={category.name}
+            className={`h-56 md:h-full ${index === 0 ? "md:row-span-2" : ""}`}
+          >
+            <FeaturedCategoryCard category={category} />
+          </div>
+        ))}
       </div>
     </section>
   )
