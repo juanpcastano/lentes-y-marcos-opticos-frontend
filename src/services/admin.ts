@@ -12,7 +12,6 @@ export interface AdminVariant {
   id: string | null
   variantName: string | null
   sku: string | null
-  priceAdjustment: number | null
   imageUrl: string | null
   isActive: boolean
 }
@@ -64,7 +63,6 @@ export interface AdminVariantInput {
   id?: string | null
   variantName: string
   sku: string
-  priceAdjustment: number | null
   imageUrl: string
   isActive: boolean
 }

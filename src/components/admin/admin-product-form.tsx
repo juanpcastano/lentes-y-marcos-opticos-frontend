@@ -96,7 +96,6 @@ export function AdminProductForm({
           id: variant.id,
           variantName: variant.variantName ?? "",
           sku: variant.sku ?? "",
-          priceAdjustment: variant.priceAdjustment,
           imageUrl: variant.imageUrl ?? "",
           isActive: variant.isActive,
         })),
@@ -189,7 +188,6 @@ export function AdminProductForm({
       {
         variantName: "",
         sku: "",
-        priceAdjustment: null,
         imageUrl: "",
         isActive: true,
       },

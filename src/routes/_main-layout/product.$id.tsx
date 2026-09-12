@@ -56,13 +56,13 @@ function ProductDetailPage() {
   })
   const availableVariants =
     product?.variants.filter(
-      (variant) => variant.isActive !== false && variant.id !== null,
+      (variant): variant is typeof variant & { id: string } =>
+        variant.isActive !== false && variant.id !== null,
     ) ?? []
   const selectedVariant =
     availableVariants.find((variant) => variant.id === selectedVariantId) ??
     availableVariants[0]
-  const variantPrice =
-    (product?.price ?? 0) + (selectedVariant?.priceAdjustment ?? 0)
+  const variantPrice = product?.price ?? 0
 
   const addToCartMutation = useMutation({
     mutationFn: () => {
@@ -202,12 +202,8 @@ function ProductDetailPage() {
           </h1>
 
           <ProductPrice
-            originalPrice={
-              product.originalPrice + (selectedVariant?.priceAdjustment ?? 0)
-            }
-            discountedPrice={
-              product.discountedPrice + (selectedVariant?.priceAdjustment ?? 0)
-            }
+            originalPrice={product.originalPrice}
+            discountedPrice={product.discountedPrice}
             discountPercentage={product.discountPercentage}
           />
 

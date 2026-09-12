@@ -14,7 +14,6 @@ export interface ProductVariant {
   id: string | null
   variantName: string | null
   sku: string | null
-  priceAdjustment: number | null
   imageUrl: string | null
   isActive: boolean | null
 }
