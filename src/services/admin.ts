@@ -146,11 +146,21 @@ export function setAdminProductActive(id: string, active: boolean) {
   return api.patch<void>(`/admin/products/${id}/active?active=${active}`)
 }
 
-export function uploadAdminImage(id: string, file: File, primary: boolean) {
+export function uploadAdminImage(
+  id: string,
+  file: File,
+  primary: boolean,
+  onProgress?: (percent: number) => void,
+) {
   const body = new FormData()
   body.append("file", file)
   body.append("primary", String(primary))
-  return api.post<AdminImage>(`/admin/products/${id}/images`, body)
+  return api.post<AdminImage>(`/admin/products/${id}/images`, body, {
+    onUploadProgress: (event) => {
+      if (event.total)
+        onProgress?.(Math.round((event.loaded / event.total) * 100))
+    },
+  })
 }
 
 export function deleteAdminImage(productId: string, imageId: string) {
@@ -160,6 +170,13 @@ export function deleteAdminImage(productId: string, imageId: string) {
 export function setAdminPrimaryImage(productId: string, imageId: string) {
   return api.put<AdminImage>(
     `/admin/products/${productId}/images/${imageId}/primary`,
+  )
+}
+
+export function reorderAdminImages(productId: string, imageIds: string[]) {
+  return api.put<AdminImage[]>(
+    `/admin/products/${productId}/images/order`,
+    imageIds,
   )
 }
 

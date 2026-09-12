@@ -1,7 +1,23 @@
 import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Eye, Plus, Trash2, Upload } from "lucide-react"
+import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core"
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
+import { snapCenterToCursor } from "@dnd-kit/modifiers"
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import {
+  ArrowLeft,
+  Eye,
+  GripVertical,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 import { Checkbox } from "#/components/ui/checkbox"
@@ -22,11 +38,12 @@ import { toast } from "#/hooks/use-toast"
 import {
   createAdminProduct,
   deleteAdminImage,
-  setAdminPrimaryImage,
+  reorderAdminImages,
   updateAdminProduct,
   uploadAdminImage,
 } from "#/services/admin"
 import type {
+  AdminImage,
   AdminProduct,
   AdminProductInput,
   AdminVariantInput,
@@ -61,6 +78,87 @@ const PRODUCT_TYPES = [
   { value: "accesorio", label: "Accesorio" },
 ]
 
+function SortableImageCard({
+  image,
+  onDelete,
+}: {
+  image: AdminImage
+  onDelete: () => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`cursor-grab touch-none active:cursor-grabbing ${
+        isDragging ? "relative z-10 opacity-0" : ""
+      }`}
+    >
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <div className="relative">
+          <img
+            className="aspect-square w-full object-cover"
+            src={image.imageUrl}
+            alt=""
+          />
+          <div className="absolute right-2 top-2 rounded-full bg-background/90 p-2 text-muted-foreground shadow-sm">
+            <GripVertical className="size-4" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 px-4 p-2 text-xs">
+          <span className="font-medium text-muted-foreground">
+            {image.isPrimary ? "Principal" : "Galería"}
+          </span>
+          <Button
+            type="button"
+            size="icon-xs"
+            variant="ghost"
+            aria-label="Eliminar imagen"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={onDelete}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ImageDragOverlay({
+  image,
+  width,
+}: {
+  image: AdminImage
+  width?: number
+}) {
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border bg-card shadow-2xl"
+      style={width ? { width } : undefined}
+    >
+      <img
+        className="aspect-square w-full object-cover"
+        src={image.imageUrl}
+        alt=""
+      />
+    </div>
+  )
+}
+
 export function AdminProductForm({
   product,
   returnSearch,
@@ -72,6 +170,15 @@ export function AdminProductForm({
   const queryClient = useQueryClient()
   const [input, setInput] = useState<AdminProductInput>(emptyInput)
   const [imageError, setImageError] = useState("")
+  const [pendingImages, setPendingImages] = useState<
+    { file: File; preview: string }[]
+  >([])
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [activeImageId, setActiveImageId] = useState<string | null>(null)
+  const [activeImageWidth, setActiveImageWidth] = useState<number>()
+  const [orderedImages, setOrderedImages] = useState<AdminImage[]>(
+    product?.images ?? [],
+  )
   const [validationError, setValidationError] = useState("")
   const { data: categories = [] } = useQuery(
     createAdminCategoriesQueryOptions(),
@@ -80,6 +187,12 @@ export function AdminProductForm({
 
   useEffect(() => {
     if (product) {
+      setOrderedImages(
+        product.images.map((image, index) => ({
+          ...image,
+          isPrimary: index === 0,
+        })),
+      )
       setInput({
         name: product.name,
         brandId: product.brandId,
@@ -104,10 +217,26 @@ export function AdminProductForm({
   }, [product])
 
   const save = useMutation({
-    mutationFn: () =>
-      product
-        ? updateAdminProduct(product.id, input)
-        : createAdminProduct(input),
+    mutationFn: async () => {
+      const saved = product
+        ? await updateAdminProduct(product.id, input)
+        : await createAdminProduct(input)
+
+      if (product && orderedImages.length > 0) {
+        const imageIds = orderedImages.map((image) => image.id)
+        const originalImageIds = product.images.map((image) => image.id)
+        const orderChanged = imageIds.some(
+          (imageId, index) => imageId !== originalImageIds[index],
+        )
+        const firstImageChanged = imageIds[0] !== originalImageIds[0]
+
+        if (orderChanged || firstImageChanged) {
+          await reorderAdminImages(saved.id, imageIds)
+        }
+      }
+
+      return saved
+    },
     onSuccess: async (saved) => {
       toast({
         variant: "success",
@@ -150,21 +279,31 @@ export function AdminProductForm({
   })
 
   const upload = useMutation({
-    mutationFn: ({ file, primary }: { file: File; primary: boolean }) =>
-      uploadAdminImage(product!.id, file, primary),
+    mutationFn: async (files: File[]) => {
+      const uploaded: Awaited<ReturnType<typeof uploadAdminImage>>[] = []
+      for (const [index, file] of files.entries()) {
+        uploaded.push(
+          await uploadAdminImage(
+            product!.id,
+            file,
+            product!.images.length === 0 && index === 0,
+            (percent) =>
+              setUploadProgress(
+                Math.round(((index + percent / 100) / files.length) * 100),
+              ),
+          ),
+        )
+      }
+      return uploaded
+    },
     onSuccess: async () => {
+      pendingImages.forEach(({ preview }) => URL.revokeObjectURL(preview))
+      setPendingImages([])
+      setUploadProgress(0)
       await queryClient.invalidateQueries({
         queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
       })
     },
-  })
-
-  const setPrimary = useMutation({
-    mutationFn: (imageId: string) => setAdminPrimaryImage(product!.id, imageId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
-      }),
   })
 
   const removeImage = useMutation({
@@ -174,6 +313,47 @@ export function AdminProductForm({
         queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
       }),
   })
+
+  function handleImageDragStart({ active }: DragStartEvent) {
+    setActiveImageId(String(active.id))
+    setActiveImageWidth(active.rect.current.initial?.width)
+  }
+
+  function handleImageDragCancel() {
+    setActiveImageId(null)
+    setActiveImageWidth(undefined)
+  }
+
+  function clearActiveImageAfterDrop() {
+    window.setTimeout(() => {
+      setActiveImageId(null)
+      setActiveImageWidth(undefined)
+    }, 250)
+  }
+
+  function handleImageDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) {
+      clearActiveImageAfterDrop()
+      return
+    }
+    const from = orderedImages.findIndex(
+      (image) => image.id === String(active.id),
+    )
+    const to = orderedImages.findIndex((image) => image.id === String(over.id))
+    if (from >= 0 && to >= 0) {
+      let nextImages = [...orderedImages]
+      const [moved] = nextImages.splice(from, 1)
+      nextImages.splice(to, 0, moved)
+      nextImages = nextImages.map((image, index) => ({
+        ...image,
+        isPrimary: index === 0,
+      }))
+      setOrderedImages(nextImages)
+    }
+    clearActiveImageAfterDrop()
+  }
+
+  const activeImage = orderedImages.find((image) => image.id === activeImageId)
 
   function updateField<TKey extends keyof AdminProductInput>(
     key: TKey,
@@ -203,7 +383,40 @@ export function AdminProductForm({
     )
   }
 
-  function handleImage(file: File | undefined) {
+  function handleImages(files: FileList | undefined) {
+    if (!files || !product) return
+    const selected = Array.from(files)
+    const file = selected.find(
+      (candidate) =>
+        !(["image/jpeg", "image/png", "image/webp"] as string[]).includes(
+          candidate.type,
+        ) || candidate.size > 3 * 1024 * 1024,
+    )
+    if (file) {
+      setImageError(
+        file.size > 3 * 1024 * 1024
+          ? "Cada imagen no puede superar 3 MB."
+          : "Usa imágenes JPG, PNG o WebP.",
+      )
+      return
+    }
+    pendingImages.forEach(({ preview }) => URL.revokeObjectURL(preview))
+    setImageError("")
+    setPendingImages(
+      selected.map((selectedFile) => ({
+        file: selectedFile,
+        preview: URL.createObjectURL(selectedFile),
+      })),
+    )
+  }
+
+  function uploadSelectedImages() {
+    if (pendingImages.length > 0) {
+      upload.mutate(pendingImages.map(({ file }) => file))
+    }
+  }
+
+  /*
     if (!file || !product) return
     if (
       !(["image/jpeg", "image/png", "image/webp"] as string[]).includes(
@@ -219,7 +432,7 @@ export function AdminProductForm({
     }
     setImageError("")
     upload.mutate({ file, primary: product.images.length === 0 })
-  }
+  } */
 
   function saveProduct() {
     if (input.basePrice <= 0) {
@@ -520,51 +733,77 @@ export function AdminProductForm({
           <CardContent className="space-y-4">
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed p-6 text-sm text-muted-foreground hover:bg-muted">
               <Upload />
-              {upload.isPending ? "Subiendo..." : "Seleccionar imagen"}
+              {upload.isPending
+                ? `Subiendo... ${uploadProgress}%`
+                : "Seleccionar imágenes"}
               <input
                 className="hidden"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => handleImage(e.target.files?.[0])}
+                multiple
+                onChange={(e) => handleImages(e.target.files ?? undefined)}
                 disabled={upload.isPending}
               />
             </label>
+            {pendingImages.length > 0 && !upload.isPending && (
+              <div className="space-y-3 rounded-2xl border bg-muted/30 p-3">
+                <p className="text-sm font-medium">
+                  {pendingImages.length} imagen(es) listas para subir
+                </p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {pendingImages.map(({ file, preview }) => (
+                    <img
+                      key={`${file.name}-${file.lastModified}`}
+                      className="aspect-square rounded-lg object-cover"
+                      src={preview}
+                      alt={`Vista previa de ${file.name}`}
+                    />
+                  ))}
+                </div>
+                <Button type="button" onClick={uploadSelectedImages}>
+                  <Upload />
+                  Subir imágenes
+                </Button>
+              </div>
+            )}
             {imageError && (
               <p className="text-sm text-destructive">{imageError}</p>
             )}
-            <div className="grid gap-3 sm:grid-cols-3">
-              {product.images.map((image) => (
-                <div
-                  key={image.id}
-                  className="overflow-hidden rounded-2xl border"
-                >
-                  <img
-                    className="aspect-square w-full object-cover"
-                    src={image.imageUrl}
-                    alt=""
-                  />
-                  <div className="flex items-center justify-between gap-2 p-2 text-xs">
-                    <Button
-                      type="button"
-                      size="xs"
-                      variant={image.isPrimary ? "secondary" : "ghost"}
-                      onClick={() => setPrimary.mutate(image.id)}
-                    >
-                      {image.isPrimary ? "Principal" : "Hacer principal"}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label="Eliminar imagen"
-                      onClick={() => removeImage.mutate(image.id)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
+            {upload.error && (
+              <p className="text-sm text-destructive">{upload.error.message}</p>
+            )}
+            <DndContext
+              collisionDetection={closestCorners}
+              onDragStart={handleImageDragStart}
+              onDragEnd={handleImageDragEnd}
+              onDragCancel={handleImageDragCancel}
+            >
+              <SortableContext
+                items={orderedImages.map((image) => image.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {orderedImages.map((image) => (
+                    <SortableImageCard
+                      key={image.id}
+                      image={image}
+                      onDelete={() => removeImage.mutate(image.id)}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+              <DragOverlay
+                modifiers={[snapCenterToCursor]}
+                dropAnimation={{ duration: 250, easing: "ease" }}
+              >
+                {activeImage ? (
+                  <ImageDragOverlay
+                    image={activeImage}
+                    width={activeImageWidth}
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </CardContent>
         </Card>
       )}

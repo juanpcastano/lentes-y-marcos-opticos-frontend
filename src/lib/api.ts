@@ -3,6 +3,7 @@ import type {
   AxiosError,
   AxiosInstance,
   InternalAxiosRequestConfig,
+  AxiosRequestConfig,
 } from "axios"
 
 let accessToken: string | null = null
@@ -108,8 +109,8 @@ client.interceptors.response.use(
 export const api = {
   get: <T>(path: string) => client.get<T>(path).then((r) => r.data),
 
-  post: <T>(path: string, body?: unknown) =>
-    client.post<T>(path, body).then((r) => r.data),
+  post: <T>(path: string, body?: unknown, config?: AxiosRequestConfig) =>
+    client.post<T>(path, body, config).then((r) => r.data),
 
   put: <T>(path: string, body?: unknown) =>
     client.put<T>(path, body).then((r) => r.data),
