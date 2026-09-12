@@ -65,21 +65,24 @@ function ProductDetailPage() {
     (product?.price ?? 0) + (selectedVariant?.priceAdjustment ?? 0)
 
   const addToCartMutation = useMutation({
-    mutationFn: () =>
-      addToCart(
-        product!.id,
+    mutationFn: () => {
+      if (!product || availableVariants.length === 0) {
+        throw new Error("El producto no tiene variantes disponibles.")
+      }
+      const variant = selectedVariant
+      return addToCart(
+        product.id,
         1,
-        selectedVariant?.id
-          ? {
-              id: selectedVariant.id,
-              name: selectedVariant.variantName ?? "Variante",
-              productName: product!.name,
-              imageUrl: selectedVariant.imageUrl,
-              price: variantPrice,
-            }
-          : undefined,
-        product!.name,
-      ),
+        {
+          id: variant.id,
+          name: variant.variantName ?? "Variante",
+          productName: product.name,
+          imageUrl: variant.imageUrl,
+          price: variantPrice,
+        },
+        product.name,
+      )
+    },
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
@@ -131,6 +134,7 @@ function ProductDetailPage() {
   function handleAddToCart() {
     if (submitting || addToCartMutation.isPending) return
     if (!product?.isActive) return
+    if (availableVariants.length === 0) return
     if (!user) {
       navigate({
         to: "/login",
@@ -259,12 +263,17 @@ function ProductDetailPage() {
             size="lg"
             className="mt-2 w-full sm:w-auto"
             disabled={
-              !product.isActive || submitting || addToCartMutation.isPending
+              !product.isActive ||
+              availableVariants.length === 0 ||
+              submitting ||
+              addToCartMutation.isPending
             }
             onClick={handleAddToCart}
           >
             {!product.isActive ? (
               "No disponible ahora mismo"
+            ) : availableVariants.length === 0 ? (
+              "Sin variantes disponibles"
             ) : submitting || addToCartMutation.isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />

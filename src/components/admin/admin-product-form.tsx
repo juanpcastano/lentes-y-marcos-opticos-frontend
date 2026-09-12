@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "#/components/ui/select"
 import { Textarea } from "#/components/ui/textarea"
+import { Switch } from "#/components/ui/switch"
 import { ToastAction } from "#/components/ui/toast"
 import { toast } from "#/hooks/use-toast"
 import {
@@ -470,7 +471,7 @@ export function AdminProductForm({
           {input.variants.map((variant, index) => (
             <div
               key={variant.id ?? index}
-              className="grid gap-2 rounded-2xl border p-3 sm:grid-cols-[1fr_1.2fr_auto]"
+              className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[1fr_1.2fr_auto_auto] sm:items-center"
             >
               <Input
                 placeholder="Nombre o combinación (ej. Rojo / M)"
@@ -484,6 +485,16 @@ export function AdminProductForm({
                 value={variant.sku}
                 onChange={(e) => updateVariant(index, { sku: e.target.value })}
               />
+              <label className="flex items-center justify-between gap-2 text-sm text-muted-foreground sm:flex-col sm:items-center sm:justify-center">
+                <span>{variant.isActive ? "Activa" : "Inactiva"}</span>
+                <Switch
+                  checked={variant.isActive}
+                  onCheckedChange={(isActive) =>
+                    updateVariant(index, { isActive })
+                  }
+                  aria-label={`${variant.isActive ? "Desactivar" : "Activar"} variante ${variant.variantName || index + 1}`}
+                />
+              </label>
               <Button
                 type="button"
                 size="icon"

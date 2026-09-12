@@ -8,6 +8,7 @@ import type { Cart, CartLine } from "#/services/cart"
 import { formatCop } from "#/services/orders"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent } from "#/components/ui/card"
+import { Image } from "#/components/ui/image"
 
 export const Route = createFileRoute("/_main-layout/_authenticated/cart")({
   component: RouteComponent,
@@ -192,10 +193,11 @@ function CartLineCard({
   return (
     <Card className={unavailable ? "border-dashed" : undefined}>
       <CardContent className="flex gap-4 p-4">
-        <img
+        <Image
           src={line.imageUrl}
           alt={line.name}
-          className="size-20 shrink-0 rounded-lg object-cover"
+          containerClassName="size-20 shrink-0 rounded-lg"
+          className="size-full object-cover"
           loading="lazy"
         />
         <div className="flex flex-1 flex-col gap-1">

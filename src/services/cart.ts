@@ -95,16 +95,22 @@ function resolveLines(
     const productName =
       product?.name ?? line.productName ?? "Producto no disponible"
     const unitPrice = line.unitPrice ?? product?.price ?? 0
+    const variants = product?.variants ?? []
     const matchingVariant = line.variantId
-      ? product?.variants?.find(
+      ? variants.find(
           (variant) =>
             variant.id === line.variantId ||
             sameVariantName(line.variantName, variant.variantName),
         )
       : undefined
+    const hasAvailableVariant = variants.some(
+      (variant) => variant.id !== null && variant.isActive !== false,
+    )
     const variantUnavailable =
-      line.variantId !== undefined &&
-      (!matchingVariant || matchingVariant.isActive === false)
+      product !== undefined &&
+      (!line.variantId ||
+        !matchingVariant ||
+        matchingVariant.isActive === false)
     const cartLine = {
       productId: product?.id ?? line.productId,
       variantId: matchingVariant?.id ?? line.variantId,
@@ -129,7 +135,9 @@ function resolveLines(
         unitPrice: line.unitPrice ?? 0,
         lineTotal: 0,
         unavailableReason: variantUnavailable
-          ? "La variante seleccionada ya no está disponible"
+          ? hasAvailableVariant
+            ? "La variante seleccionada ya no está disponible"
+            : "El producto no tiene variantes disponibles"
           : undefined,
       })
     }
@@ -205,7 +213,7 @@ export async function fetchCart(): Promise<Cart> {
 export async function addToCart(
   productId: string,
   quantity: number,
-  variant?: {
+  variant: {
     id: string
     name: string
     productName: string
