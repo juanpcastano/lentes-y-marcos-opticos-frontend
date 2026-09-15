@@ -1,6 +1,14 @@
 import * as React from "react"
 import { Link, useLocation } from "@tanstack/react-router"
-import { Boxes, LayoutDashboard, Tags, Store, Tag, LogOut } from "lucide-react"
+import {
+  Boxes,
+  Images,
+  LayoutDashboard,
+  Tags,
+  Store,
+  Tag,
+  LogOut,
+} from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   Sidebar,
@@ -96,6 +104,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link to="/admin/brands">
                     <Tag />
                     Marcas
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/admin/gallery"}
+                >
+                  <Link to="/admin/gallery">
+                    <Images />
+                    Galería
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

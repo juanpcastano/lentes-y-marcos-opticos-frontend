@@ -16,6 +16,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MainLayoutRouteImport } from './routes/_main-layout'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MainLayoutIndexRouteImport } from './routes/_main-layout/index'
+import { Route as AdminGalleryRouteImport } from './routes/admin/gallery'
 import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
 import { Route as AdminBrandsRouteImport } from './routes/admin/brands'
 import { Route as MainLayoutCategoriesRouteImport } from './routes/_main-layout/categories'
@@ -70,6 +71,11 @@ const MainLayoutIndexRoute = MainLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MainLayoutRoute,
+} as any)
+const AdminGalleryRoute = AdminGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/categories',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof MainLayoutCategoriesRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/': typeof AdminIndexRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/categories': typeof MainLayoutCategoriesRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/admin': typeof AdminIndexRoute
   '/cart': typeof MainLayoutAuthenticatedCartRoute
   '/checkout': typeof MainLayoutAuthenticatedCheckoutRouteWithChildren
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_main-layout/categories': typeof MainLayoutCategoriesRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/_main-layout/': typeof MainLayoutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_main-layout/_authenticated/cart': typeof MainLayoutAuthenticatedCartRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/admin/brands'
     | '/admin/categories'
+    | '/admin/gallery'
     | '/admin/'
     | '/cart'
     | '/checkout'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/admin/brands'
     | '/admin/categories'
+    | '/admin/gallery'
     | '/admin'
     | '/cart'
     | '/checkout'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/_main-layout/categories'
     | '/admin/brands'
     | '/admin/categories'
+    | '/admin/gallery'
     | '/_main-layout/'
     | '/admin/'
     | '/_main-layout/_authenticated/cart'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof MainLayoutIndexRouteImport
       parentRoute: typeof MainLayoutRoute
+    }
+    '/admin/gallery': {
+      id: '/admin/gallery'
+      path: '/gallery'
+      fullPath: '/admin/gallery'
+      preLoaderRoute: typeof AdminGalleryRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/categories': {
       id: '/admin/categories'
@@ -637,6 +656,7 @@ const MainLayoutRouteWithChildren = MainLayoutRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminBrandsRoute: typeof AdminBrandsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminGalleryRoute: typeof AdminGalleryRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductsIdRoute: typeof AdminProductsIdRoute
   AdminProductsNewRoute: typeof AdminProductsNewRoute
@@ -646,6 +666,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBrandsRoute: AdminBrandsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminGalleryRoute: AdminGalleryRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductsIdRoute: AdminProductsIdRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,

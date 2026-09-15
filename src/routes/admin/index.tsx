@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Badge, Boxes, Tags } from "lucide-react"
+import { Badge, Boxes, Images, Tags } from "lucide-react"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 
@@ -52,6 +52,17 @@ function AdminDashboard() {
             <Link to="/admin/brands">
               <Badge className="size-8 pr-2" />
               Marcas
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-24 justify-start px-6 text-2xl"
+          >
+            <Link to="/admin/gallery">
+              <Images className="size-8 pr-2" />
+              Galería
             </Link>
           </Button>
         </div>

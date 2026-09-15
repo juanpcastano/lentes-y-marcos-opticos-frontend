@@ -19,7 +19,19 @@ import {
   Upload,
 } from "lucide-react"
 import { Button } from "#/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "#/components/ui/alert-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
+import { AdminMediaPicker } from "#/components/admin/admin-media-picker"
+import { AdminMediaDeleteDialog } from "#/components/admin/admin-media-delete-dialog"
 import { Checkbox } from "#/components/ui/checkbox"
 import { Field, FieldLabel } from "#/components/ui/field"
 import { Input } from "#/components/ui/input"
@@ -37,13 +49,17 @@ import { ToastAction } from "#/components/ui/toast"
 import { toast } from "#/hooks/use-toast"
 import {
   createAdminProduct,
+  attachExistingAdminImage,
+  deleteAdminMedia,
   deleteAdminImage,
+  listAdminGallery,
   reorderAdminImages,
   updateAdminProduct,
   uploadAdminImage,
 } from "#/services/admin"
 import type {
   AdminImage,
+  AdminMediaAsset,
   AdminProduct,
   AdminProductInput,
   AdminVariantInput,
@@ -173,9 +189,13 @@ export function AdminProductForm({
   const [pendingImages, setPendingImages] = useState<
     { file: File; preview: string }[]
   >([])
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const [pendingExistingImages, setPendingExistingImages] = useState<string[]>(
+    [],
+  )
   const [activeImageId, setActiveImageId] = useState<string | null>(null)
   const [activeImageWidth, setActiveImageWidth] = useState<number>()
+  const [imageToDelete, setImageToDelete] = useState<AdminImage | null>(null)
+  const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
   const [orderedImages, setOrderedImages] = useState<AdminImage[]>(
     product?.images ?? [],
   )
@@ -184,6 +204,27 @@ export function AdminProductForm({
     createAdminCategoriesQueryOptions(),
   )
   const { data: brands = [] } = useQuery(createAdminBrandsQueryOptions())
+  const mediaGallery = useQuery({
+    queryKey: ["admin", "media", "gallery"],
+    queryFn: listAdminGallery,
+    enabled: imageToDelete !== null,
+  })
+  const permanentAsset: AdminMediaAsset | null = imageToDelete
+    ? (mediaGallery.data?.find(
+        (asset) => asset.imageUrl === imageToDelete.imageUrl,
+      ) ?? {
+        key: storageKeyFromUrl(imageToDelete.imageUrl),
+        imageUrl: imageToDelete.imageUrl,
+        folder: "products",
+        references: [
+          {
+            type: "product",
+            id: product?.id ?? "",
+            name: product?.name ?? "este producto",
+          },
+        ],
+      })
+    : null
 
   useEffect(() => {
     if (product) {
@@ -216,11 +257,40 @@ export function AdminProductForm({
     }
   }, [product])
 
+  const attachExisting = useMutation({
+    mutationFn: (imageUrl: string) =>
+      attachExistingAdminImage(
+        product!.id,
+        imageUrl,
+        product!.images.length === 0,
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
+      }),
+  })
+
   const save = useMutation({
     mutationFn: async () => {
       const saved = product
         ? await updateAdminProduct(product.id, input)
         : await createAdminProduct(input)
+
+      if (!product && pendingImages.length > 0) {
+        for (const [index, image] of pendingImages.entries()) {
+          await uploadAdminImage(saved.id, image.file, index === 0)
+        }
+      }
+
+      if (!product && pendingExistingImages.length > 0) {
+        for (const [index, imageUrl] of pendingExistingImages.entries()) {
+          await attachExistingAdminImage(
+            saved.id,
+            imageUrl,
+            pendingImages.length === 0 && index === 0,
+          )
+        }
+      }
 
       if (product && orderedImages.length > 0) {
         const imageIds = orderedImages.map((image) => image.id)
@@ -238,6 +308,9 @@ export function AdminProductForm({
       return saved
     },
     onSuccess: async (saved) => {
+      pendingImages.forEach(({ preview }) => URL.revokeObjectURL(preview))
+      setPendingImages([])
+      setPendingExistingImages([])
       toast({
         variant: "success",
         title: product ? "Producto actualizado" : "Producto creado",
@@ -287,10 +360,6 @@ export function AdminProductForm({
             product!.id,
             file,
             product!.images.length === 0 && index === 0,
-            (percent) =>
-              setUploadProgress(
-                Math.round(((index + percent / 100) / files.length) * 100),
-              ),
           ),
         )
       }
@@ -299,7 +368,6 @@ export function AdminProductForm({
     onSuccess: async () => {
       pendingImages.forEach(({ preview }) => URL.revokeObjectURL(preview))
       setPendingImages([])
-      setUploadProgress(0)
       await queryClient.invalidateQueries({
         queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
       })
@@ -308,10 +376,29 @@ export function AdminProductForm({
 
   const removeImage = useMutation({
     mutationFn: (imageId: string) => deleteAdminImage(product!.id, imageId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      setImageToDelete(null)
+      await queryClient.invalidateQueries({
         queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
-      }),
+      })
+    },
+  })
+
+  const permanentlyRemoveImage = useMutation({
+    mutationFn: (asset: NonNullable<typeof permanentAsset>) =>
+      deleteAdminMedia(asset.key, true),
+    onSuccess: async () => {
+      setImageToDelete(null)
+      setPermanentDeleteOpen(false)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["admin", "media", "gallery"],
+        }),
+      ])
+    },
   })
 
   function handleImageDragStart({ active }: DragStartEvent) {
@@ -383,19 +470,19 @@ export function AdminProductForm({
     )
   }
 
-  function handleImages(files: FileList | undefined) {
-    if (!files || !product) return
-    const selected = Array.from(files)
+  function handleImages(files: File[]) {
+    if (files.length === 0) return
+    const selected = files
     const file = selected.find(
       (candidate) =>
         !(["image/jpeg", "image/png", "image/webp"] as string[]).includes(
           candidate.type,
-        ) || candidate.size > 3 * 1024 * 1024,
+        ) || candidate.size > 10 * 1024 * 1024,
     )
     if (file) {
       setImageError(
-        file.size > 3 * 1024 * 1024
-          ? "Cada imagen no puede superar 3 MB."
+        file.size > 10 * 1024 * 1024
+          ? "Cada imagen no puede superar 10 MB."
           : "Usa imágenes JPG, PNG o WebP.",
       )
       return
@@ -416,6 +503,16 @@ export function AdminProductForm({
     }
   }
 
+  function selectExistingImage(imageUrl: string) {
+    if (product) {
+      attachExisting.mutate(imageUrl)
+      return
+    }
+    setPendingExistingImages((current) =>
+      current.includes(imageUrl) ? current : [...current, imageUrl],
+    )
+  }
+
   /*
     if (!file || !product) return
     if (
@@ -426,8 +523,8 @@ export function AdminProductForm({
       setImageError("Usa una imagen JPG, PNG o WebP.")
       return
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setImageError("La imagen no puede superar 3 MB.")
+    if (file.size > 10 * 1024 * 1024) {
+      setImageError("La imagen no puede superar 10 MB.")
       return
     }
     setImageError("")
@@ -725,88 +822,159 @@ export function AdminProductForm({
         </CardContent>
       </Card>
 
-      {product && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Imágenes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed p-6 text-sm text-muted-foreground hover:bg-muted">
-              <Upload />
-              {upload.isPending
-                ? `Subiendo... ${uploadProgress}%`
-                : "Seleccionar imágenes"}
-              <input
-                className="hidden"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                onChange={(e) => handleImages(e.target.files ?? undefined)}
-                disabled={upload.isPending}
-              />
-            </label>
-            {pendingImages.length > 0 && !upload.isPending && (
-              <div className="space-y-3 rounded-2xl border bg-muted/30 p-3">
-                <p className="text-sm font-medium">
-                  {pendingImages.length} imagen(es) listas para subir
-                </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                  {pendingImages.map(({ file, preview }) => (
-                    <img
-                      key={`${file.name}-${file.lastModified}`}
-                      className="aspect-square rounded-lg object-cover"
-                      src={preview}
-                      alt={`Vista previa de ${file.name}`}
-                    />
-                  ))}
-                </div>
-                <Button type="button" onClick={uploadSelectedImages}>
-                  <Upload />
-                  Subir imágenes
-                </Button>
-              </div>
-            )}
-            {imageError && (
-              <p className="text-sm text-destructive">{imageError}</p>
-            )}
-            {upload.error && (
-              <p className="text-sm text-destructive">{upload.error.message}</p>
-            )}
-            <DndContext
-              collisionDetection={closestCorners}
-              onDragStart={handleImageDragStart}
-              onDragEnd={handleImageDragEnd}
-              onDragCancel={handleImageDragCancel}
-            >
-              <SortableContext
-                items={orderedImages.map((image) => image.id)}
-                strategy={rectSortingStrategy}
-              >
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {orderedImages.map((image) => (
-                    <SortableImageCard
-                      key={image.id}
-                      image={image}
-                      onDelete={() => removeImage.mutate(image.id)}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-              <DragOverlay
-                modifiers={[snapCenterToCursor]}
-                dropAnimation={{ duration: 250, easing: "ease" }}
-              >
-                {activeImage ? (
-                  <ImageDragOverlay
-                    image={activeImage}
-                    width={activeImageWidth}
+      <Card>
+        <CardHeader>
+          <CardTitle>Imágenes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <AdminMediaPicker
+            folder="products"
+            label="Añadir imágenes"
+            value=""
+            onChange={selectExistingImage}
+            onFiles={handleImages}
+          />
+          {pendingExistingImages.length > 0 && !product && (
+            <div className="rounded-2xl border bg-muted/30 p-3">
+              <p className="text-sm font-medium">
+                {pendingExistingImages.length} imagen(es) existentes
+                seleccionadas
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {pendingExistingImages.map((imageUrl) => (
+                  <img
+                    key={imageUrl}
+                    className="aspect-square rounded-lg object-cover"
+                    src={imageUrl}
+                    alt="Imagen existente seleccionada"
                   />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </div>
+          )}
+          {pendingImages.length > 0 && !upload.isPending && (
+            <div className="space-y-3 rounded-2xl border bg-muted/30 p-3">
+              <p className="text-sm font-medium">
+                {pendingImages.length} imagen(es) listas para subir
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {pendingImages.map(({ file, preview }) => (
+                  <img
+                    key={`${file.name}-${file.lastModified}`}
+                    className="aspect-square rounded-lg object-cover"
+                    src={preview}
+                    alt={`Vista previa de ${file.name}`}
+                  />
+                ))}
+              </div>
+              <Button type="button" onClick={uploadSelectedImages}>
+                <Upload />
+                Subir imágenes
+              </Button>
+            </div>
+          )}
+          {imageError && (
+            <p className="text-sm text-destructive">{imageError}</p>
+          )}
+          {upload.error && (
+            <p className="text-sm text-destructive">{upload.error.message}</p>
+          )}
+          <DndContext
+            collisionDetection={closestCorners}
+            onDragStart={handleImageDragStart}
+            onDragEnd={handleImageDragEnd}
+            onDragCancel={handleImageDragCancel}
+          >
+            <SortableContext
+              items={orderedImages.map((image) => image.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid gap-3 sm:grid-cols-3">
+                {orderedImages.map((image) => (
+                  <SortableImageCard
+                    key={image.id}
+                    image={image}
+                    onDelete={() => setImageToDelete(image)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay
+              modifiers={[snapCenterToCursor]}
+              dropAnimation={{ duration: 250, easing: "ease" }}
+            >
+              {activeImage ? (
+                <ImageDragOverlay
+                  image={activeImage}
+                  width={activeImageWidth}
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </CardContent>
+      </Card>
+
+      <AlertDialog
+        open={imageToDelete !== null && !permanentDeleteOpen}
+        onOpenChange={(open) => !open && setImageToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Qué deseas hacer con esta imagen?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Puedes quitarla únicamente de este producto o eliminarla de forma
+              permanente de la galería y de todas sus referencias.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="!flex-col !gap-2">
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full min-w-0 whitespace-normal"
+              disabled={
+                removeImage.isPending || permanentlyRemoveImage.isPending
+              }
+              onClick={() => setPermanentDeleteOpen(true)}
+            >
+              Eliminar permanentemente
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-w-0 whitespace-normal"
+              disabled={
+                removeImage.isPending || permanentlyRemoveImage.isPending
+              }
+              onClick={() => {
+                if (imageToDelete) removeImage.mutate(imageToDelete.id)
+              }}
+            >
+              Quitar del producto
+            </Button>
+            <AlertDialogCancel
+              className="w-full"
+              disabled={removeImage.isPending}
+            >
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AdminMediaDeleteDialog
+        asset={permanentAsset}
+        open={permanentDeleteOpen}
+        isPending={permanentlyRemoveImage.isPending}
+        onOpenChange={(open) => {
+          setPermanentDeleteOpen(open)
+          if (!open) setImageToDelete(null)
+        }}
+        onConfirm={() =>
+          permanentAsset && permanentlyRemoveImage.mutate(permanentAsset)
+        }
+      />
 
       {save.error && (
         <p className="text-sm text-destructive">{save.error.message}</p>
@@ -830,4 +998,12 @@ export function AdminProductForm({
       </div>
     </div>
   )
+}
+
+function storageKeyFromUrl(url: string) {
+  try {
+    return new URL(url).pathname.replace(/^\/+/, "")
+  } catch {
+    return url
+  }
 }

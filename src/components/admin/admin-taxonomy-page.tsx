@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Pencil, Plus, Trash2, X } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,13 +12,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog"
 import { Button } from "#/components/ui/button"
+import { AdminMediaPicker } from "#/components/admin/admin-media-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 import { Checkbox } from "#/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "#/components/ui/field"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { Textarea } from "#/components/ui/textarea"
+import { toast } from "#/hooks/use-toast"
 import {
   ADMIN_BRANDS_QUERY_KEY,
   ADMIN_CATEGORIES_QUERY_KEY,
@@ -52,6 +61,7 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
   const [featured, setFeatured] = useState(false)
   const [editing, setEditing] = useState<TaxonomyItem | null>(null)
   const [deleting, setDeleting] = useState<TaxonomyItem | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const queryKey = isBrands
     ? ADMIN_BRANDS_QUERY_KEY
     : ADMIN_CATEGORIES_QUERY_KEY
@@ -89,6 +99,16 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
     setImageUrl("")
     setFeatured(false)
     setEditing(null)
+    setFormOpen(false)
+  }
+
+  function startCreate() {
+    setEditing(null)
+    setName("")
+    setDetail("")
+    setImageUrl("")
+    setFeatured(false)
+    setFormOpen(true)
   }
 
   function startEdit(item: TaxonomyItem) {
@@ -97,6 +117,7 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
     setDetail(item.detail)
     setImageUrl(item.imageUrl ?? "")
     setFeatured(item.isFeatured)
+    setFormOpen(true)
   }
 
   const save = useMutation({
@@ -111,8 +132,22 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
       return isBrands ? createAdminBrand(input) : createAdminCategory(input)
     },
     onSuccess: async () => {
+      toast({
+        variant: "success",
+        title: `${isBrands ? "Marca" : "Categoría"} ${editing ? "actualizada" : "creada"}`,
+        description: editing
+          ? "Los cambios se guardaron correctamente."
+          : `${isBrands ? "La marca" : "La categoría"} se añadió correctamente.`,
+      })
       await queryClient.invalidateQueries({ queryKey })
       reset()
+    },
+    onError: (saveError) => {
+      toast({
+        variant: "destructive",
+        title: `No se pudo ${editing ? "actualizar" : "crear"} ${isBrands ? "la marca" : "la categoría"}`,
+        description: saveError.message,
+      })
     },
   })
 
@@ -139,147 +174,143 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
       {remove.error && (
         <p className="mb-4 text-sm text-destructive">{remove.error.message}</p>
       )}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>
-              {isBrands ? "Marcas registradas" : "Categorías registradas"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {isPending && (
-                <p className="p-6 text-sm text-muted-foreground">Cargando...</p>
-              )}
-              {!isPending && data.length === 0 && (
-                <p className="p-6 text-sm text-muted-foreground">
-                  Todavía no hay registros.
-                </p>
-              )}
-              {data.map((item) => (
-                <div
-                  className="flex items-center justify-between gap-4 px-6 py-4"
-                  key={item.id}
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {item.detail || "Sin descripción"}
-                    </p>
-                    {item.isFeatured && (
-                      <span className="text-xs text-primary">Destacada</span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={`Editar ${item.name}`}
-                      onClick={() => startEdit(item)}
-                    >
-                      <Pencil />
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={`Eliminar ${item.name}`}
-                      onClick={() => setDeleting(item)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center h-6 justify-between">
-              <CardTitle>{editing ? "Editar" : "Añadir"}</CardTitle>
-              {editing && (
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Cancelar edición"
-                  onClick={reset}
-                >
-                  <X />
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault()
-                save.mutate()
-              }}
-            >
-              <FieldGroup className="gap-4">
-                <Field>
-                  <FieldLabel htmlFor="taxonomy-name">Nombre</FieldLabel>
-                  <Input
-                    id="taxonomy-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="taxonomy-detail">
-                    {isBrands ? "Tagline" : "Descripción"}
-                  </FieldLabel>
-                  <Textarea
-                    id="taxonomy-detail"
-                    className="min-h-24"
-                    value={detail}
-                    onChange={(e) => setDetail(e.target.value)}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="taxonomy-image">
-                    URL de imagen
-                  </FieldLabel>
-                  <Input
-                    id="taxonomy-image"
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                  />
-                </Field>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="taxonomy-featured"
-                    checked={featured}
-                    onCheckedChange={(checked) => setFeatured(checked === true)}
-                  />
-                  <Label htmlFor="taxonomy-featured" className="cursor-pointer">
-                    Destacada
-                  </Label>
-                </div>
-                {save.error && (
-                  <p className="text-sm text-destructive">
-                    {save.error.message}
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <CardTitle>
+            {isBrands ? "Marcas registradas" : "Categorías registradas"}
+          </CardTitle>
+          <Button type="button" onClick={startCreate}>
+            <Plus />
+            Añadir
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {isPending && (
+              <p className="p-6 text-sm text-muted-foreground">Cargando...</p>
+            )}
+            {!isPending && data.length === 0 && (
+              <p className="p-6 text-sm text-muted-foreground">
+                Todavía no hay registros.
+              </p>
+            )}
+            {data.map((item) => (
+              <div
+                className="flex items-center justify-between gap-4 px-6 py-4"
+                key={item.id}
+              >
+                <div className="min-w-0">
+                  <p className="font-medium">{item.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {item.detail || "Sin descripción"}
                   </p>
-                )}
-                <Button
-                  className="w-full"
-                  type="submit"
-                  disabled={save.isPending}
-                >
-                  <Plus />
-                  {save.isPending
-                    ? "Guardando..."
-                    : editing
-                      ? "Guardar cambios"
-                      : "Añadir"}
-                </Button>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                  {item.isFeatured && (
+                    <span className="text-xs text-primary">Destacada</span>
+                  )}
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`Editar ${item.name}`}
+                    onClick={() => startEdit(item)}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`Eliminar ${item.name}`}
+                    onClick={() => setDeleting(item)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <Dialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          if (!open) reset()
+          else setFormOpen(true)
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? "Editar" : "Añadir"} {isBrands ? "marca" : "categoría"}
+            </DialogTitle>
+            <DialogDescription>
+              {editing
+                ? "Actualiza la información y guarda los cambios."
+                : `Completa los datos para crear ${isBrands ? "una marca" : "una categoría"}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              save.mutate()
+            }}
+          >
+            <FieldGroup className="gap-4">
+              <Field>
+                <FieldLabel htmlFor="taxonomy-name">Nombre</FieldLabel>
+                <Input
+                  id="taxonomy-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="taxonomy-detail">
+                  {isBrands ? "Tagline" : "Descripción"}
+                </FieldLabel>
+                <Textarea
+                  id="taxonomy-detail"
+                  className="min-h-24"
+                  value={detail}
+                  onChange={(e) => setDetail(e.target.value)}
+                />
+              </Field>
+              <AdminMediaPicker
+                folder={isBrands ? "brands" : "categories"}
+                label="Imagen"
+                value={imageUrl}
+                onChange={setImageUrl}
+              />
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="taxonomy-featured"
+                  checked={featured}
+                  onCheckedChange={(checked) => setFeatured(checked === true)}
+                />
+                <Label htmlFor="taxonomy-featured" className="cursor-pointer">
+                  Destacada
+                </Label>
+              </div>
+              {save.error && (
+                <p className="text-sm text-destructive">{save.error.message}</p>
+              )}
+              <Button
+                className="w-full"
+                type="submit"
+                disabled={save.isPending}
+              >
+                <Plus />
+                {save.isPending
+                  ? "Guardando..."
+                  : editing
+                    ? "Guardar cambios"
+                    : "Añadir"}
+              </Button>
+            </FieldGroup>
+          </form>
+        </DialogContent>
+      </Dialog>
       {error && (
         <p className="mt-4 text-sm text-destructive">{error.message}</p>
       )}

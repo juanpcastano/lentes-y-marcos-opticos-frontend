@@ -91,6 +91,24 @@ export interface TaxonomyInput {
   isFeatured?: boolean
 }
 
+export type AdminMediaFolder = "categories" | "brands" | "products"
+
+export interface AdminMediaImage {
+  key: string
+  imageUrl: string
+}
+
+export interface AdminMediaReference {
+  type: "brand" | "category" | "product" | "variant"
+  id: string
+  name: string
+}
+
+export interface AdminMediaAsset extends AdminMediaImage {
+  folder: "products" | "brands" | "categories"
+  references: AdminMediaReference[]
+}
+
 export async function listAdminProducts(params?: {
   q?: string
   brands?: string[]
@@ -210,4 +228,43 @@ export function updateAdminBrand(id: string, input: TaxonomyInput) {
 
 export function deleteAdminBrand(id: string) {
   return api.delete<void>(`/admin/brands/${id}`)
+}
+
+export function listAdminMedia(folder: AdminMediaFolder) {
+  return api.get<AdminMediaImage[]>(`/admin/media/${folder}`)
+}
+
+export function uploadAdminMedia(
+  folder: AdminMediaFolder,
+  file: File,
+  onProgress?: (percent: number) => void,
+) {
+  const body = new FormData()
+  body.append("file", file)
+  return api.post<AdminMediaImage>(`/admin/media/${folder}`, body, {
+    onUploadProgress: (event) => {
+      if (event.total)
+        onProgress?.(Math.round((event.loaded / event.total) * 100))
+    },
+  })
+}
+
+export function attachExistingAdminImage(
+  productId: string,
+  imageUrl: string,
+  primary: boolean,
+) {
+  return api.post<AdminImage>(`/admin/products/${productId}/images/existing`, {
+    imageUrl,
+    primary,
+  })
+}
+
+export function listAdminGallery() {
+  return api.get<AdminMediaAsset[]>("/admin/media/gallery")
+}
+
+export function deleteAdminMedia(key: string, force: boolean) {
+  const params = new URLSearchParams({ key, force: String(force) })
+  return api.delete<void>(`/admin/media/gallery?${params}`)
 }
