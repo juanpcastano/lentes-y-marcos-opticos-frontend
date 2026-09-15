@@ -16,6 +16,16 @@ import type {
   LegacyReactTable,
 } from "@tanstack/react-table/legacy"
 import { Link } from "@tanstack/react-router"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "#/components/ui/alert-dialog"
 import { Button } from "#/components/ui/button"
 import {
   Collapsible,
@@ -227,6 +237,15 @@ export function AdminProductsTable({
   const [rowSelection, setRowSelection] = useState<
     LegacyReactTable<AdminProduct>["state"]["rowSelection"]
   >({})
+  const [pendingChange, setPendingChange] = useState<{
+    ids: string[]
+    active: boolean
+  } | null>(null)
+
+  function requestChange(ids: string[], active: boolean) {
+    if (ids.length === 0 || isUpdating) return
+    setPendingChange({ ids, active })
+  }
 
   const { q, active } = filters
   const sorting: LegacyReactTable<AdminProduct>["state"]["sorting"] = sort
@@ -358,7 +377,7 @@ export function AdminProductsTable({
               {row.original.isActive ? (
                 <DropdownMenuItem
                   disabled={isUpdating}
-                  onClick={() => onDeactivate([row.original.id])}
+                  onClick={() => requestChange([row.original.id], false)}
                 >
                   {isUpdating && <LoaderCircle className="animate-spin" />}
                   Desactivar producto
@@ -366,7 +385,7 @@ export function AdminProductsTable({
               ) : (
                 <DropdownMenuItem
                   disabled={isUpdating}
-                  onClick={() => onActivate([row.original.id])}
+                  onClick={() => requestChange([row.original.id], true)}
                 >
                   {isUpdating && <LoaderCircle className="animate-spin" />}
                   Activar producto
@@ -408,6 +427,11 @@ export function AdminProductsTable({
   const firstVisible = totalElements === 0 ? 0 : page * pageSize + 1
   const lastVisible = page * pageSize + rows.length
   const hasActiveFilters = q.trim() !== "" || active !== undefined
+  const pendingProductNames = (pendingChange?.ids ?? [])
+    .map((id) => rows.find((row) => row.id === id)?.name)
+    .filter((name): name is string => Boolean(name))
+  const pendingCount = pendingChange?.ids.length ?? 0
+  const pendingActionLabel = pendingChange?.active ? "Activar" : "Desactivar"
 
   return (
     <div className="mt-6 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5">
@@ -456,7 +480,10 @@ export function AdminProductsTable({
             <Button
               disabled={isUpdating}
               onClick={() =>
-                onActivate(selectedRows.map((row) => row.original.id))
+                requestChange(
+                  selectedRows.map((row) => row.original.id),
+                  true,
+                )
               }
             >
               {isUpdating && <LoaderCircle className="animate-spin" />}
@@ -466,7 +493,10 @@ export function AdminProductsTable({
               variant="destructive"
               disabled={isUpdating}
               onClick={() =>
-                onDeactivate(selectedRows.map((row) => row.original.id))
+                requestChange(
+                  selectedRows.map((row) => row.original.id),
+                  false,
+                )
               }
             >
               {isUpdating && <LoaderCircle className="animate-spin" />}
@@ -654,6 +684,55 @@ export function AdminProductsTable({
           </Pagination>
         )}
       </div>
+      <AlertDialog
+        open={pendingChange !== null}
+        onOpenChange={(open) => !open && setPendingChange(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingCount > 1
+                ? `¿${pendingActionLabel} ${pendingCount} productos?`
+                : `¿${pendingActionLabel} el producto “${pendingProductNames[0] ?? ""}”?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingChange?.active
+                ? "Los productos volverán a estar visibles en la tienda."
+                : "Los productos dejarán de estar visibles en la tienda y no se podrán comprar. Esta acción se puede revertir."}
+              {pendingProductNames.length > 1 && (
+                <>
+                  {" "}
+                  Productos: {pendingProductNames.slice(0, 3).join(", ")}
+                  {pendingProductNames.length > 3 &&
+                    ` y ${pendingProductNames.length - 3} más`}
+                  .
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdating}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant={pendingChange?.active ? "default" : "destructive"}
+              disabled={isUpdating || !pendingChange}
+              onClick={() => {
+                if (!pendingChange) return
+                if (pendingChange.active) onActivate(pendingChange.ids)
+                else onDeactivate(pendingChange.ids)
+                setPendingChange(null)
+              }}
+            >
+              {isUpdating
+                ? "Aplicando..."
+                : pendingChange?.active
+                  ? "Activar"
+                  : "Desactivar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

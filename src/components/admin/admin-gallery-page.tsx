@@ -11,7 +11,11 @@ import {
   CardTitle,
 } from "#/components/ui/card"
 import { toast } from "#/hooks/use-toast"
-import { deleteAdminMedia, listAdminGallery } from "#/services/admin"
+import {
+  adminErrorMessage,
+  deleteAdminMedia,
+  listAdminGallery,
+} from "#/services/admin"
 import type { AdminMediaAsset } from "#/services/admin"
 
 type Filter = "all" | "used" | "unused"
@@ -120,7 +124,7 @@ export function AdminGalleryPage() {
           )}
           {gallery.error && (
             <p className="rounded-2xl border border-destructive/30 p-6 text-sm text-destructive">
-              No se pudo cargar la galería: {gallery.error.message}
+              No se pudo cargar la galería: {adminErrorMessage(gallery.error)}
             </p>
           )}
           {!gallery.isPending && !gallery.error && assets.length === 0 && (

@@ -10,7 +10,11 @@ import {
 } from "#/components/ui/dialog"
 import { Button } from "#/components/ui/button"
 import { Label } from "#/components/ui/label"
-import { listAdminMedia, uploadAdminMedia } from "#/services/admin"
+import {
+  adminErrorMessage,
+  listAdminMedia,
+  uploadAdminMedia,
+} from "#/services/admin"
 import type { AdminMediaFolder } from "#/services/admin"
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -192,11 +196,18 @@ export function AdminMediaPicker({
                   Cargando imágenes...
                 </p>
               )}
-              {!media.isPending && media.data?.length === 0 && (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  Todavía no hay imágenes en esta carpeta.
+              {media.isError && (
+                <p className="py-10 text-center text-sm text-destructive">
+                  {adminErrorMessage(media.error)}
                 </p>
               )}
+              {!media.isPending &&
+                !media.isError &&
+                media.data.length === 0 && (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    Todavía no hay imágenes en esta carpeta.
+                  </p>
+                )}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {media.data?.map((image) => (
                   <button

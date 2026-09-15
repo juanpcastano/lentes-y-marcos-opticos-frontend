@@ -1,4 +1,4 @@
-import { api } from "#/lib/api"
+import { ApiError, api } from "#/lib/api"
 import type { ProductFacets } from "#/services/products"
 
 export interface AdminImage {
@@ -267,4 +267,26 @@ export function listAdminGallery() {
 export function deleteAdminMedia(key: string, force: boolean) {
   const params = new URLSearchParams({ key, force: String(force) })
   return api.delete<void>(`/admin/media/gallery?${params}`)
+}
+
+/**
+ * Mensaje legible para errores del panel admin. Traduce los estados
+ * que requieren una acción del usuario (sesión, permisos, storage)
+ * y conserva el mensaje del backend para el resto (409, 400, ...).
+ */
+export function adminErrorMessage(
+  error: unknown,
+  fallback = "Ocurrió un error inesperado. Inténtalo de nuevo.",
+): string {
+  if (error instanceof ApiError) {
+    if (error.status === 503)
+      return "El almacenamiento de imágenes no está configurado en el servidor (S3). Contacta al administrador del sistema."
+    if (error.status === 403)
+      return "No tienes permiso para realizar esta acción."
+    if (error.status === 401)
+      return "Tu sesión expiró. Vuelve a iniciar sesión."
+    if (error.message) return error.message
+  }
+  if (error instanceof Error && error.message) return error.message
+  return fallback
 }

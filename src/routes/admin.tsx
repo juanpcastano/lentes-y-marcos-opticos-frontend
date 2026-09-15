@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Navigate,
+  Outlet,
+  redirect,
+  useLocation,
+} from "@tanstack/react-router"
 import { AppSidebar } from "#/components/app-sidebar"
 import {
   SidebarInset,
@@ -30,13 +36,18 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const { user, isLoading } = useAuth()
+  const location = useLocation()
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="p-8 text-muted-foreground">
         Cargando administración...
       </div>
     )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" search={{ redirect: location.href }} />
   }
 
   if (!user.isAdmin) {

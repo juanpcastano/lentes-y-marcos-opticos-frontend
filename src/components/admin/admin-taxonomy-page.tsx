@@ -33,6 +33,7 @@ import {
   ADMIN_CATEGORIES_QUERY_KEY,
 } from "#/query-options/admin"
 import {
+  adminErrorMessage,
   createAdminBrand,
   createAdminCategory,
   deleteAdminBrand,
@@ -172,7 +173,9 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
         </p>
       </header>
       {remove.error && (
-        <p className="mb-4 text-sm text-destructive">{remove.error.message}</p>
+        <p className="mb-4 text-sm text-destructive">
+          {adminErrorMessage(remove.error)}
+        </p>
       )}
       <Card className="overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between gap-4">
@@ -293,7 +296,9 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
                 </Label>
               </div>
               {save.error && (
-                <p className="text-sm text-destructive">{save.error.message}</p>
+                <p className="text-sm text-destructive">
+                  {adminErrorMessage(save.error)}
+                </p>
               )}
               <Button
                 className="w-full"
@@ -312,7 +317,9 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
         </DialogContent>
       </Dialog>
       {error && (
-        <p className="mt-4 text-sm text-destructive">{error.message}</p>
+        <p className="mt-4 text-sm text-destructive">
+          {adminErrorMessage(error)}
+        </p>
       )}
       <AlertDialog
         open={deleting !== null}

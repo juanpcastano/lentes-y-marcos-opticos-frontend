@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core"
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
 import { snapCenterToCursor } from "@dnd-kit/modifiers"
 import {
   SortableContext,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
@@ -21,7 +30,6 @@ import {
 import { Button } from "#/components/ui/button"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -48,10 +56,11 @@ import { Switch } from "#/components/ui/switch"
 import { ToastAction } from "#/components/ui/toast"
 import { toast } from "#/hooks/use-toast"
 import {
+  adminErrorMessage,
   createAdminProduct,
   attachExistingAdminImage,
-  deleteAdminMedia,
   deleteAdminImage,
+  deleteAdminMedia,
   listAdminGallery,
   reorderAdminImages,
   updateAdminProduct,
@@ -119,7 +128,8 @@ function SortableImageCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`cursor-grab touch-none active:cursor-grabbing ${
+      title="Arrastra o usa espacio y flechas para reordenar"
+      className={`cursor-grab touch-none rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing ${
         isDragging ? "relative z-10 opacity-0" : ""
       }`}
     >
@@ -441,6 +451,12 @@ export function AdminProductForm({
   }
 
   const activeImage = orderedImages.find((image) => image.id === activeImageId)
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   function updateField<TKey extends keyof AdminProductInput>(
     key: TKey,
@@ -877,9 +893,17 @@ export function AdminProductForm({
             <p className="text-sm text-destructive">{imageError}</p>
           )}
           {upload.error && (
-            <p className="text-sm text-destructive">{upload.error.message}</p>
+            <p className="text-sm text-destructive">
+              {adminErrorMessage(upload.error)}
+            </p>
+          )}
+          {attachExisting.error && (
+            <p className="text-sm text-destructive">
+              {adminErrorMessage(attachExisting.error)}
+            </p>
           )}
           <DndContext
+            sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleImageDragStart}
             onDragEnd={handleImageDragEnd}
@@ -977,7 +1001,9 @@ export function AdminProductForm({
       />
 
       {save.error && (
-        <p className="text-sm text-destructive">{save.error.message}</p>
+        <p className="text-sm text-destructive">
+          {adminErrorMessage(save.error)}
+        </p>
       )}
       {validationError && (
         <p className="text-sm text-destructive">{validationError}</p>

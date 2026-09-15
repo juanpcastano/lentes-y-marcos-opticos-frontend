@@ -18,7 +18,11 @@ import {
   createAdminProductFacetsQueryOptions,
   createAdminProductsQueryOptions,
 } from "#/query-options/admin"
-import { deactivateAdminProduct, setAdminProductActive } from "#/services/admin"
+import {
+  adminErrorMessage,
+  deactivateAdminProduct,
+  setAdminProductActive,
+} from "#/services/admin"
 
 export const Route = createFileRoute("/admin/products/")({
   validateSearch: adminProductsSearchSchema,
@@ -175,7 +179,14 @@ function ProductsPage() {
       </header>
 
       {error && (
-        <p className="mt-6 text-sm text-destructive">{error.message}</p>
+        <p className="mt-6 text-sm text-destructive">
+          {adminErrorMessage(error)}
+        </p>
+      )}
+      {setActive.error && (
+        <p className="mt-6 text-sm text-destructive">
+          {adminErrorMessage(setActive.error)}
+        </p>
       )}
       <AdminProductsTable
         data={data}
