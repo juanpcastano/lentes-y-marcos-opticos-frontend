@@ -8,14 +8,24 @@ import { CarouselControls } from "./carousel-controls"
 const AUTO_PLAY_INTERVAL = 3000
 
 export function HeroCarousel() {
-  const { data: slides = [], isLoading } = useQuery(
-    createHeroSlidesQueryOptions(),
-  )
+  const {
+    data: slides = [],
+    isLoading,
+    isError,
+  } = useQuery(createHeroSlidesQueryOptions())
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prefersReducedMotion = useRef(false)
+
+  // Keep the active index in range when the slide list changes
+  // (e.g. admin deactivates slides while the home is open)
+  useEffect(() => {
+    setActiveIndex((prev) =>
+      slides.length === 0 ? 0 : Math.min(prev, slides.length - 1),
+    )
+  }, [slides.length])
 
   // Detect reduced motion preference
   useEffect(() => {
@@ -83,11 +93,13 @@ export function HeroCarousel() {
   }, [slides.length])
 
   const goToNext = useCallback(() => {
+    if (slides.length === 0) return
     setActiveIndex((prev) => (prev + 1) % slides.length)
     startAutoPlay()
   }, [slides.length, startAutoPlay])
 
   const goToPrevious = useCallback(() => {
+    if (slides.length === 0) return
     setActiveIndex((prev) => (prev - 1 + slides.length) % slides.length)
     startAutoPlay()
   }, [slides.length, startAutoPlay])
@@ -114,7 +126,7 @@ export function HeroCarousel() {
     return <HeroCarouselSkeleton />
   }
 
-  if (slides.length === 0) {
+  if (isError || slides.length === 0) {
     return null
   }
 
@@ -130,7 +142,7 @@ export function HeroCarousel() {
     >
       {slides.map((slide, index) => (
         <div
-          key={index}
+          key={slide.id}
           className="absolute inset-0 transition-opacity duration-500 ease-in-out"
           style={{
             opacity: index === activeIndex ? 1 : 0,

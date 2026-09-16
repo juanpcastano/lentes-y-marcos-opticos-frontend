@@ -17,11 +17,13 @@ export function CarouselControls({
 }: CarouselControlsProps) {
   return (
     <>
-      {/* Arrows — visible on hover only (desktop) */}
-      <div className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:pointer-events-auto">
+      {/* Arrows — visible on hover only (desktop).
+        The wrapper stays pointer-events-none so it never blocks clicks on
+        slide content (CTAs); only the arrow buttons themselves capture clicks. */}
+      <div className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <button
           onClick={onPrevious}
-          className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
+          className="pointer-events-auto absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
@@ -29,7 +31,7 @@ export function CarouselControls({
 
         <button
           onClick={onNext}
-          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
+          className="pointer-events-auto absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
           aria-label="Next slide"
         >
           <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />

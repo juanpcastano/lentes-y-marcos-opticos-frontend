@@ -17,6 +17,8 @@ export interface ProductsParams {
   shapes?: string[]
   priceMin?: number
   priceMax?: number
+  onSale?: boolean
+  isNew?: boolean
   sort?: "relevance" | "price-asc" | "price-desc"
   page?: number
   size?: number
@@ -51,6 +53,8 @@ export async function fetchProducts(
     search.set("priceMin", String(params.priceMin))
   if (params.priceMax !== undefined)
     search.set("priceMax", String(params.priceMax))
+  if (params.onSale) search.set("onSale", "true")
+  if (params.isNew) search.set("isNew", "true")
   if (params.sort !== undefined) search.set("sort", params.sort)
   search.set("page", String(params.page ?? 0))
   search.set("size", String(params.size ?? 24))

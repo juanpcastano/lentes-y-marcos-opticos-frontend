@@ -4,6 +4,7 @@ import {
   Boxes,
   Images,
   LayoutDashboard,
+  Presentation,
   Tags,
   Store,
   Tag,
@@ -115,6 +116,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link to="/admin/gallery">
                     <Images />
                     Galería
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/admin/hero"}
+                >
+                  <Link to="/admin/hero">
+                    <Presentation />
+                    Hero
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

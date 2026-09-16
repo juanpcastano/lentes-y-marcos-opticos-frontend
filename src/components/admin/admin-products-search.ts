@@ -8,6 +8,8 @@ export const adminProductsSearchSchema = z.object({
   shapes: z.array(z.string()).default([]),
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
+  onSale: z.boolean().optional(),
+  isNew: z.boolean().optional(),
   active: z.enum(["true", "false"]).optional().catch(undefined),
   page: z.coerce.number().int().min(0).catch(0).optional(),
   sort: z

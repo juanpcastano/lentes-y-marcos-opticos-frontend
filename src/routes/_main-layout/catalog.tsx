@@ -26,6 +26,8 @@ const catalogSearchSchema = z.object({
   materials: z.array(z.string()).default([]),
   shapes: z.array(z.string()).default([]),
   categories: z.array(z.string()).default([]),
+  onSale: z.boolean().optional(),
+  isNew: z.boolean().optional(),
   sort: z.enum(["relevance", "price-asc", "price-desc"]).default("relevance"),
 })
 
@@ -59,6 +61,8 @@ function CatalogPage() {
     shapes: search.shapes,
     priceMin: search.priceMin,
     priceMax: search.priceMax,
+    onSale: search.onSale,
+    isNew: search.isNew,
     sort: search.sort,
     size: 24,
   }

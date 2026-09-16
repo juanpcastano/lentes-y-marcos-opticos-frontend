@@ -4,6 +4,8 @@ import { MaterialFilter } from "#/components/catalog/material-filter"
 import { PriceFilter } from "#/components/catalog/price-filter"
 import { ShapeFilter } from "#/components/catalog/shape-filter"
 import { Button } from "#/components/ui/button"
+import { Checkbox } from "#/components/ui/checkbox"
+import { Label } from "#/components/ui/label"
 import { FilterSection } from "#/components/catalog/filter-section"
 
 export interface ProductFilterValues {
@@ -13,6 +15,8 @@ export interface ProductFilterValues {
   shapes: string[]
   priceMin?: number
   priceMax?: number
+  onSale?: boolean
+  isNew?: boolean
 }
 
 interface ProductFilterFieldsProps {
@@ -55,11 +59,48 @@ export function ProductFilterFields({
             shapes: [],
             priceMin: undefined,
             priceMax: undefined,
+            onSale: undefined,
+            isNew: undefined,
           })
         }
       >
         Limpiar filtros
       </Button>
+
+      <FilterSection title="Ofertas y novedades">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-on-sale"
+              checked={values.onSale ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ onSale: checked === true ? true : undefined })
+              }
+            />
+            <Label
+              htmlFor="filter-on-sale"
+              className="cursor-pointer text-sm font-normal"
+            >
+              En oferta
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-is-new"
+              checked={values.isNew ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ isNew: checked === true ? true : undefined })
+              }
+            />
+            <Label
+              htmlFor="filter-is-new"
+              className="cursor-pointer text-sm font-normal"
+            >
+              Novedades
+            </Label>
+          </div>
+        </div>
+      </FilterSection>
 
       <FilterSection title="Marca">
         <BrandFilter

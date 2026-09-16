@@ -91,7 +91,34 @@ export interface TaxonomyInput {
   isFeatured?: boolean
 }
 
-export type AdminMediaFolder = "categories" | "brands" | "products"
+export interface AdminHeroAction {
+  label: string
+  to: string
+}
+
+export interface AdminHeroSlide {
+  id: string
+  title: string
+  description: string | null
+  imageUrl: string | null
+  actions: AdminHeroAction[]
+  sortOrder: number
+  isActive: boolean
+}
+
+export interface AdminHeroSlideInput {
+  title: string
+  description?: string
+  imageUrl: string
+  ctaLabel?: string
+  ctaTo?: string
+  cta2Label?: string
+  cta2To?: string
+  sortOrder?: number
+  isActive?: boolean
+}
+
+export type AdminMediaFolder = "categories" | "brands" | "products" | "hero"
 
 export interface AdminMediaImage {
   key: string
@@ -99,13 +126,13 @@ export interface AdminMediaImage {
 }
 
 export interface AdminMediaReference {
-  type: "brand" | "category" | "product" | "variant"
+  type: "brand" | "category" | "product" | "variant" | "hero"
   id: string
   name: string
 }
 
 export interface AdminMediaAsset extends AdminMediaImage {
-  folder: "products" | "brands" | "categories"
+  folder: "products" | "brands" | "categories" | "hero"
   references: AdminMediaReference[]
 }
 
@@ -117,6 +144,8 @@ export async function listAdminProducts(params?: {
   shapes?: string[]
   priceMin?: number
   priceMax?: number
+  onSale?: boolean
+  isNew?: boolean
   active?: string
   page?: number
   sort?: string
@@ -133,6 +162,8 @@ export async function listAdminProducts(params?: {
     query.set("priceMin", String(params.priceMin))
   if (params?.priceMax !== undefined)
     query.set("priceMax", String(params.priceMax))
+  if (params?.onSale) query.set("onSale", "true")
+  if (params?.isNew) query.set("isNew", "true")
   if (params?.active) query.set("active", params.active)
   if (params?.sort) query.set("sort", params.sort)
   query.set("page", String(params?.page ?? 0))
@@ -230,6 +261,26 @@ export function deleteAdminBrand(id: string) {
   return api.delete<void>(`/admin/brands/${id}`)
 }
 
+export function listAdminHeroSlides() {
+  return api.get<AdminHeroSlide[]>("/admin/hero-slides")
+}
+
+export function createAdminHeroSlide(input: AdminHeroSlideInput) {
+  return api.post<AdminHeroSlide>("/admin/hero-slides", input)
+}
+
+export function updateAdminHeroSlide(id: string, input: AdminHeroSlideInput) {
+  return api.put<AdminHeroSlide>(`/admin/hero-slides/${id}`, input)
+}
+
+export function deleteAdminHeroSlide(id: string) {
+  return api.delete<void>(`/admin/hero-slides/${id}`)
+}
+
+export function reorderAdminHeroSlides(ids: string[]) {
+  return api.put<AdminHeroSlide[]>("/admin/hero-slides/reorder", { ids })
+}
+
 export function listAdminMedia(folder: AdminMediaFolder) {
   return api.get<AdminMediaImage[]>(`/admin/media/${folder}`)
 }
@@ -273,6 +324,8 @@ export function deleteAdminMedia(key: string, force: boolean) {
  * Mensaje legible para errores del panel admin. Traduce los estados
  * que requieren una acción del usuario (sesión, permisos, storage)
  * y conserva el mensaje del backend para el resto (409, 400, ...).
+ * Si el backend envía detalles por campo (validación), se anexan para
+ * no tener que abrir la consola.
  */
 export function adminErrorMessage(
   error: unknown,
@@ -285,6 +338,13 @@ export function adminErrorMessage(
       return "No tienes permiso para realizar esta acción."
     if (error.status === 401)
       return "Tu sesión expiró. Vuelve a iniciar sesión."
+    const base = error.message || fallback
+    if (error.details) {
+      const fields = Object.entries(error.details)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(" ")
+      return `${base} — ${fields}`
+    }
     if (error.message) return error.message
   }
   if (error instanceof Error && error.message) return error.message

@@ -74,6 +74,8 @@ function ProductsPage() {
       shapes: search.shapes,
       priceMin: search.priceMin,
       priceMax: search.priceMax,
+      onSale: search.onSale,
+      isNew: search.isNew,
       active: activeFilter,
       page: currentPage,
       sort: currentSort,
@@ -147,7 +149,9 @@ function ProductsPage() {
           next.materials.length > 0 ||
           next.shapes.length > 0 ||
           next.priceMin !== undefined ||
-          next.priceMax !== undefined
+          next.priceMax !== undefined ||
+          next.onSale !== undefined ||
+          next.isNew !== undefined
 
         return {
           ...next,

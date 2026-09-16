@@ -38,7 +38,7 @@
 
 - Uses **TanStack Query** (React Query).
 - Pattern: `src/services/` holds raw fetch functions; `src/query-options/` exports `queryOptions` wrappers. See `src/query-options/hero-slides.ts` as the canonical example.
-- **For the moment, all data returned by services must be hardcoded in-memory data** — there is no real backend yet.
+- Services fetch from the real backend via `api` (`src/lib/api.ts`, base `/api` proxied to `:8080`); only flows without backend endpoints yet may use hardcoded in-memory data.
 
 ## Tests
 

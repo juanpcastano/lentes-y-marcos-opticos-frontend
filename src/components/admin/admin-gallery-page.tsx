@@ -26,6 +26,7 @@ const folderLabels = {
   products: "Productos",
   brands: "Marcas",
   categories: "Categorías",
+  hero: "Hero",
 } as const
 
 const referenceLabels = {
@@ -33,6 +34,7 @@ const referenceLabels = {
   category: "Categoría",
   product: "Producto",
   variant: "Variante",
+  hero: "Hero",
 } as const
 
 export function AdminGalleryPage() {
@@ -88,7 +90,7 @@ export function AdminGalleryPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap gap-2">
-            {(["all", "products", "brands", "categories"] as const).map(
+            {(["all", "products", "brands", "categories", "hero"] as const).map(
               (option) => (
                 <Button
                   key={option}

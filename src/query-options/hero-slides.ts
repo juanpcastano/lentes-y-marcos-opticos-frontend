@@ -20,6 +20,7 @@ export default function createHeroSlidesQueryOptions<
   return queryOptions<HeroSlide[], TError, TData>({
     queryKey: ["hero-slides", params ?? {}],
     queryFn: fetchHeroSlides,
+    staleTime: 5 * 60 * 1000,
     ...options,
   })
 }
