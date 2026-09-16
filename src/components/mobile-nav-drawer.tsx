@@ -1,12 +1,5 @@
 import { useState } from "react"
-import {
-  Menu,
-  Search,
-  ShoppingCart,
-  User,
-  LogOut,
-  ShieldCheck,
-} from "lucide-react"
+import { Menu, ShoppingCart, User, LogOut, ShieldCheck } from "lucide-react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Sheet,
@@ -16,10 +9,9 @@ import {
   SheetTrigger,
 } from "./ui/sheet"
 import { Button } from "./ui/button"
-import { ButtonGroup } from "./ui/button-group"
-import { Input } from "./ui/input"
 import { ModeToggle } from "./mode-toggle"
 import { NAV_LINKS } from "./nav-menu"
+import { SearchInput } from "./search-input"
 import { useAuth } from "./auth-provider"
 import { useQueryClient } from "@tanstack/react-query"
 import { logout } from "#/services/auth"
@@ -83,16 +75,12 @@ const MobileNavDrawer = () => {
             </ul>
           </nav>
           <div className="flex flex-col gap-4 p-4 border-t">
-            <ButtonGroup className="w-full">
-              <Input placeholder="Buscar..." className="h-11 flex-1" />
-              <Button
-                variant="outline"
-                className="h-11 w-11 shrink-0"
-                aria-label="Search"
-              >
-                <Search className="size-5" />
-              </Button>
-            </ButtonGroup>
+            <SearchInput
+              groupClassName="w-full"
+              inputClassName="h-11 flex-1 bg-background"
+              buttonClassName="h-11 w-11 shrink-0"
+              onNavigate={handleClose}
+            />
             <div className="flex items-center justify-between">
               <ModeToggle />
               <div className="flex gap-2">

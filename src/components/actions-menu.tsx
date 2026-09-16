@@ -1,9 +1,8 @@
-import { Search, ShoppingCart, User, LogOut, ShieldCheck } from "lucide-react"
+import { ShoppingCart, User, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "./ui/button"
-import { ButtonGroup } from "./ui/button-group"
-import { Input } from "./ui/input"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { ModeToggle } from "./mode-toggle"
+import { SearchInput } from "./search-input"
 import { useAuth } from "./auth-provider"
 import {
   DropdownMenu,
@@ -45,12 +44,7 @@ const ActionsMenu = () => {
   return (
     <div className="flex gap-5 ml-5">
       <div className="hidden lg:flex gap-5">
-        <ButtonGroup>
-          <Input placeholder="Buscar..." className="h-full min-w-21" />
-          <Button variant="outline" className="h-full" aria-label="Search">
-            <Search className="size-8" />
-          </Button>
-        </ButtonGroup>
+        <SearchInput iconClassName="size-8" />
         <ModeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

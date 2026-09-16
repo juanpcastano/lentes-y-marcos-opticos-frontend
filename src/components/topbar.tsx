@@ -12,7 +12,7 @@ const Logo = () => {
           alt="Lentes Y Marcos Ópticos Logo"
           className="h-14 sm:h-18 pt-1 w-min"
         />
-        <h1 className="text-sm sm:text-base font-black pl-2">
+        <h1 className="text-lg sm:text-xl font-black pl-2 text-center">
           LENTES Y MARCOS ÓPTICOS
         </h1>
       </div>

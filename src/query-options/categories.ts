@@ -20,6 +20,10 @@ export default function createCategoriesQueryOptions<
   return queryOptions<Category[], TError, TData>({
     queryKey: ["categories", params ?? {}],
     queryFn: fetchCategories,
+    // Datos de referencia curados por el admin: cambian rara vez, se
+    // comparten entre el home y el catálogo sin refetch en cada visita.
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
     ...options,
   })
 }

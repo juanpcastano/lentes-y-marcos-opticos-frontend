@@ -20,6 +20,9 @@ export default function createFeaturedCategoriesQueryOptions<
   return queryOptions<FeaturedCategory[], TError, TData>({
     queryKey: ["featured-categories", params ?? {}],
     queryFn: fetchFeaturedCategories,
+    // Datos de referencia curados por el admin: cambian rara vez.
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
     ...options,
   })
 }

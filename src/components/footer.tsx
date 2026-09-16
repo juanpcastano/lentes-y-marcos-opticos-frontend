@@ -16,8 +16,8 @@ const socialLinks = [
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
+        width="40"
+        height="40"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -31,8 +31,8 @@ const socialLinks = [
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
+        width="40"
+        height="40"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -52,8 +52,8 @@ const socialLinks = [
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
+        width="40"
+        height="40"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -74,19 +74,19 @@ const Footer = () => {
             </h3>
             <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sidebar-foreground" />
+                <MapPin className="mt-0.5 size-6 shrink-0 text-sidebar-foreground" />
                 <span>{enterpriseData.address}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="h-5 w-5 shrink-0 text-sidebar-foreground" />
+                <Phone className="size-6 shrink-0 text-sidebar-foreground" />
                 <span>{enterpriseData.phone}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="h-5 w-5 shrink-0 text-sidebar-foreground" />
+                <Mail className="size-6 shrink-0 text-sidebar-foreground" />
                 <span>{enterpriseData.email}</span>
               </li>
               <li className="flex items-center gap-3">
-                <Clock className="h-5 w-5 shrink-0 text-sidebar-foreground" />
+                <Clock className="size-6 shrink-0 text-sidebar-foreground" />
                 <span>{enterpriseData.hours}</span>
               </li>
             </ul>

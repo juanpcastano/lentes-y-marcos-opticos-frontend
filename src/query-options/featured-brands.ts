@@ -20,6 +20,9 @@ export default function createFeaturedBrandsQueryOptions<
   return queryOptions<FeaturedBrand[], TError, TData>({
     queryKey: ["featured-brands", params ?? {}],
     queryFn: fetchFeaturedBrands,
+    // Datos de referencia curados por el admin: cambian rara vez.
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
     ...options,
   })
 }
