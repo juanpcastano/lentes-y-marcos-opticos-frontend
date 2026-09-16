@@ -147,6 +147,7 @@ function CatalogPage() {
               <Collapsible
                 open={mobileFiltersOpen}
                 onOpenChange={setMobileFiltersOpen}
+                className="mb-4"
               >
                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border px-4 py-3 font-medium">
                   Filtros
