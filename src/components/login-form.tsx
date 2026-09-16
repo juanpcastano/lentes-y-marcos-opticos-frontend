@@ -241,7 +241,7 @@ export function LoginForm({
               {step === "email" && (
                 <>
                   <div className="flex flex-col items-center gap-2 text-center">
-                    <h1 className="text-2xl font-bold">Bienvenido De Vuelta</h1>
+                    <h1 className="text-2xl font-bold">Bienvenido de vuelta</h1>
                     <p className="text-balance text-muted-foreground">
                       Ingresa tu email para continuar
                     </p>

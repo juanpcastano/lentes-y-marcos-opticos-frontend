@@ -1,5 +1,4 @@
-import { Checkbox } from "#/components/ui/checkbox"
-import { Label } from "#/components/ui/label"
+import { FilterChecklist } from "#/components/catalog/filter-checklist"
 
 interface CategoryFilterProps {
   categories: string[]
@@ -13,22 +12,12 @@ export function CategoryFilter({
   onToggle,
 }: CategoryFilterProps) {
   return (
-    <div className="space-y-2">
-      {categories.map((category) => (
-        <div key={category} className="flex items-center gap-2">
-          <Checkbox
-            id={`category-${category}`}
-            checked={selected.includes(category)}
-            onCheckedChange={() => onToggle(category)}
-          />
-          <Label
-            htmlFor={`category-${category}`}
-            className="cursor-pointer text-sm font-normal"
-          >
-            {category}
-          </Label>
-        </div>
-      ))}
-    </div>
+    <FilterChecklist
+      items={categories}
+      selected={selected}
+      onToggle={onToggle}
+      idPrefix="category"
+      searchPlaceholder="Buscar categoría..."
+    />
   )
 }

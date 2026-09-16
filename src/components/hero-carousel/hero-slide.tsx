@@ -64,17 +64,17 @@ export function HeroSlide({ slide }: HeroSlideProps) {
       <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
 
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end p-10 md:p-16 lg:p-18">
-        <h2 className="mb-2 text-2xl font-bold text-white md:text-4xl lg:text-5xl">
+      <div className="absolute inset-0 flex flex-col justify-end p-5 pb-14 sm:p-8 sm:pb-14 md:p-16 lg:p-18">
+        <h2 className="mb-2 text-xl font-bold text-white sm:text-2xl md:text-4xl lg:text-5xl">
           {slide.title}
         </h2>
         {slide.description && (
-          <p className="mb-4 max-w-xl text-sm text-white/90 md:text-base lg:text-lg">
+          <p className="mb-4 max-w-xl text-sm text-white/90 max-sm:line-clamp-3 md:text-base lg:text-lg">
             {slide.description}
           </p>
         )}
         {internalActions.length > 0 && (
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-row flex-wrap items-center gap-2">
             {internalActions.map((action, idx) => {
               const target = splitActionTarget(action.to)
               return (

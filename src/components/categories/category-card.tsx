@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { Star } from "lucide-react"
 import { Image } from "#/components/ui/image"
 import type { Category } from "./types"
 
@@ -23,6 +24,13 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
       {/* Gradient scrim for text readability */}
       <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+
+      {category.isFeatured && (
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow">
+          <Star className="size-3" />
+          Destacada
+        </span>
+      )}
 
       {/* Text overlay */}
       <div className="absolute inset-0 flex flex-col justify-end p-5">

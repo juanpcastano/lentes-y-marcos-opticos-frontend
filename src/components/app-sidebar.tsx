@@ -9,6 +9,7 @@ import {
   Store,
   Tag,
   LogOut,
+  Upload,
 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -127,6 +128,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link to="/admin/hero">
                     <Presentation />
                     Hero
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/admin/import"}
+                >
+                  <Link to="/admin/import">
+                    <Upload />
+                    Importar
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

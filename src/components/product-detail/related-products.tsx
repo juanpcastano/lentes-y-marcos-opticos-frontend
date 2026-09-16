@@ -46,7 +46,10 @@ export function RelatedProducts({
       </div>
 
       <div className="px-12">
-        <Carousel opts={{ loop: true, align: "start" }} className="w-full">
+        <Carousel
+          opts={{ loop: true, align: "start", skipSnaps: true }}
+          className="w-full"
+        >
           <CarouselContent>
             {related.map((product) => (
               <CarouselItem

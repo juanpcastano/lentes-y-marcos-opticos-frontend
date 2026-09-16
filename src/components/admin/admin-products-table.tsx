@@ -95,6 +95,8 @@ interface AdminProductsTableProps {
   onPageChange: (page: number) => void
   onActivate: (ids: string[]) => void
   onDeactivate: (ids: string[]) => void
+  onDelete: (ids: string[]) => void
+  isDeleting: boolean
   returnSearch: AdminProductsSearch
   filtersContent: ReactNode
 }
@@ -228,6 +230,8 @@ export function AdminProductsTable({
   onPageChange,
   onActivate,
   onDeactivate,
+  onDelete,
+  isDeleting,
   returnSearch,
   filtersContent,
 }: AdminProductsTableProps) {
@@ -241,10 +245,16 @@ export function AdminProductsTable({
     ids: string[]
     active: boolean
   } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
 
   function requestChange(ids: string[], active: boolean) {
-    if (ids.length === 0 || isUpdating) return
+    if (ids.length === 0 || isUpdating || isDeleting) return
     setPendingChange({ ids, active })
+  }
+
+  function requestDelete(ids: string[]) {
+    if (ids.length === 0 || isUpdating || isDeleting) return
+    setPendingDelete(ids)
   }
 
   const { q, active } = filters
@@ -299,8 +309,11 @@ export function AdminProductsTable({
               to="/admin/products/$id"
               params={{ id: row.original.id }}
               search={returnSearch}
+              title={row.original.name}
             >
-              {row.original.name}
+              {row.original.name.length > 30
+                ? `${row.original.name.slice(0, 30)}…`
+                : row.original.name}
             </Link>
             <p className="mt-1 text-xs text-muted-foreground">
               {row.original.categories.join(" · ") || "Sin categoría"}
@@ -376,7 +389,7 @@ export function AdminProductsTable({
               </DropdownMenuItem>
               {row.original.isActive ? (
                 <DropdownMenuItem
-                  disabled={isUpdating}
+                  disabled={isUpdating || isDeleting}
                   onClick={() => requestChange([row.original.id], false)}
                 >
                   {isUpdating && <LoaderCircle className="animate-spin" />}
@@ -384,19 +397,27 @@ export function AdminProductsTable({
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
-                  disabled={isUpdating}
+                  disabled={isUpdating || isDeleting}
                   onClick={() => requestChange([row.original.id], true)}
                 >
                   {isUpdating && <LoaderCircle className="animate-spin" />}
                   Activar producto
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={isUpdating || isDeleting}
+                onClick={() => requestDelete([row.original.id])}
+              >
+                {isDeleting && <LoaderCircle className="animate-spin" />}
+                Eliminar producto
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    [isUpdating, onActivate, onDeactivate],
+    [isUpdating, isDeleting, onActivate, onDeactivate],
   )
 
   const rows = data?.content ?? []
@@ -432,6 +453,10 @@ export function AdminProductsTable({
     .filter((name): name is string => Boolean(name))
   const pendingCount = pendingChange?.ids.length ?? 0
   const pendingActionLabel = pendingChange?.active ? "Activar" : "Desactivar"
+  const pendingDeleteNames = (pendingDelete ?? [])
+    .map((id) => rows.find((row) => row.id === id)?.name)
+    .filter((name): name is string => Boolean(name))
+  const pendingDeleteCount = pendingDelete?.length ?? 0
 
   return (
     <div className="mt-6 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5">
@@ -478,7 +503,7 @@ export function AdminProductsTable({
         {selectedRows.length > 0 && (
           <div className="flex gap-2">
             <Button
-              disabled={isUpdating}
+              disabled={isUpdating || isDeleting}
               onClick={() =>
                 requestChange(
                   selectedRows.map((row) => row.original.id),
@@ -491,7 +516,7 @@ export function AdminProductsTable({
             </Button>
             <Button
               variant="destructive"
-              disabled={isUpdating}
+              disabled={isUpdating || isDeleting}
               onClick={() =>
                 requestChange(
                   selectedRows.map((row) => row.original.id),
@@ -503,6 +528,18 @@ export function AdminProductsTable({
               {isUpdating
                 ? "Desactivando..."
                 : `Desactivar (${selectedRows.length})`}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isUpdating || isDeleting}
+              onClick={() =>
+                requestDelete(selectedRows.map((row) => row.original.id))
+              }
+            >
+              {isDeleting && <LoaderCircle className="animate-spin" />}
+              {isDeleting
+                ? "Eliminando..."
+                : `Eliminar (${selectedRows.length})`}
             </Button>
           </div>
         )}
@@ -729,6 +766,51 @@ export function AdminProductsTable({
                 : pendingChange?.active
                   ? "Activar"
                   : "Desactivar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDeleteCount > 1
+                ? `¿Eliminar ${pendingDeleteCount} productos?`
+                : `¿Eliminar el producto “${pendingDeleteNames[0] ?? ""}”?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Los productos se eliminarán permanentemente del catálogo junto con
+              sus variantes. Sus imágenes quedarán disponibles en la galería.
+              Esta acción no se puede deshacer.
+              {pendingDeleteNames.length > 1 && (
+                <>
+                  {" "}
+                  Productos: {pendingDeleteNames.slice(0, 3).join(", ")}
+                  {pendingDeleteNames.length > 3 &&
+                    ` y ${pendingDeleteNames.length - 3} más`}
+                  .
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeleting || !pendingDelete}
+              onClick={() => {
+                if (!pendingDelete) return
+                onDelete(pendingDelete)
+                setRowSelection({})
+                setPendingDelete(null)
+              }}
+            >
+              {isDeleting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

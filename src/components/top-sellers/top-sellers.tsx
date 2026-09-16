@@ -74,7 +74,7 @@ export function TopSellers() {
   }
 
   return (
-    <section className="px-4 py-10 md:px-6 lg:px-8">
+    <section className="px-4 py-6 lg:py-10 md:px-6 lg:px-8">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h2 className="mb-1 text-2xl font-bold md:text-3xl">
@@ -96,7 +96,7 @@ export function TopSellers() {
 
       <div className="px-12">
         <Carousel
-          opts={{ loop: true, align: "start" }}
+          opts={{ loop: true, align: "start", skipSnaps: true }}
           plugins={plugins}
           setApi={setApi}
           className="w-full"

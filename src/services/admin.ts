@@ -167,7 +167,7 @@ export async function listAdminProducts(params?: {
   if (params?.active) query.set("active", params.active)
   if (params?.sort) query.set("sort", params.sort)
   query.set("page", String(params?.page ?? 0))
-  query.set("size", "20")
+  query.set("size", "100")
   return api.get<PageResponse<AdminProduct>>(`/admin/products?${query}`)
 }
 
@@ -187,7 +187,7 @@ export function updateAdminProduct(id: string, input: AdminProductInput) {
   return api.put<AdminProduct>(`/admin/products/${id}`, input)
 }
 
-export function deactivateAdminProduct(id: string) {
+export function deleteAdminProduct(id: string) {
   return api.delete<void>(`/admin/products/${id}`)
 }
 
@@ -318,6 +318,93 @@ export function listAdminGallery() {
 export function deleteAdminMedia(key: string, force: boolean) {
   const params = new URLSearchParams({ key, force: String(force) })
   return api.delete<void>(`/admin/media/gallery?${params}`)
+}
+
+export type InventoryRowStatus =
+  "NUEVO" | "ACTUALIZAR" | "SIN_CAMBIOS" | "CONFLICTO" | "ERROR"
+
+export type InventorySuggestedAction =
+  "CREATE" | "UPDATE" | "NONE" | "DECIDE" | "SKIP"
+
+export type InventoryDecision = "REPLACE" | "UPDATE" | "DISCARD" | "CREATE"
+
+export interface InventoryExistingSnapshot {
+  name: string
+  basePrice: number
+  brand: string | null
+  categories: string[]
+  productType: string | null
+}
+
+export interface InventoryPreviewRow {
+  rowKey: string
+  sheet: string
+  rowNumber: number
+  sku: string
+  name: string | null
+  brand: string | null
+  categories: string[]
+  productType: string | null
+  basePrice: number | null
+  status: InventoryRowStatus
+  detail: string | null
+  existing: InventoryExistingSnapshot | null
+  suggestedAction: InventorySuggestedAction
+}
+
+export interface InventoryPreviewSummary {
+  total: number
+  nuevos: number
+  actualizar: number
+  sinCambios: number
+  conflictos: number
+  errores: number
+}
+
+export interface InventoryPreview {
+  rows: InventoryPreviewRow[]
+  summary: InventoryPreviewSummary
+}
+
+export interface InventoryConfirmResult {
+  created: number
+  updated: number
+  discarded: number
+  unchanged: number
+  skipped: string[]
+}
+
+export function previewInventory(
+  file: File,
+  onProgress?: (percent: number) => void,
+) {
+  const body = new FormData()
+  body.append("file", file)
+  return api.post<InventoryPreview>("/admin/inventory/preview", body, {
+    onUploadProgress: (event) => {
+      if (event.total)
+        onProgress?.(Math.round((event.loaded / event.total) * 100))
+    },
+  })
+}
+
+export function confirmInventory(
+  file: File,
+  decisions: Record<string, InventoryDecision>,
+  onProgress?: (percent: number) => void,
+) {
+  const body = new FormData()
+  body.append("file", file)
+  body.append(
+    "decisions",
+    new Blob([JSON.stringify(decisions)], { type: "application/json" }),
+  )
+  return api.post<InventoryConfirmResult>("/admin/inventory/confirm", body, {
+    onUploadProgress: (event) => {
+      if (event.total)
+        onProgress?.(Math.round((event.loaded / event.total) * 100))
+    },
+  })
 }
 
 /**

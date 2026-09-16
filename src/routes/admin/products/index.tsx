@@ -20,7 +20,7 @@ import {
 } from "#/query-options/admin"
 import {
   adminErrorMessage,
-  deactivateAdminProduct,
+  deleteAdminProduct,
   setAdminProductActive,
 } from "#/services/admin"
 
@@ -95,11 +95,15 @@ function ProductsPage() {
   const queryClient = useQueryClient()
   const setActive = useMutation({
     mutationFn: async ({ ids, active }: { ids: string[]; active: boolean }) => {
-      await Promise.all(
-        ids.map((id) =>
-          active ? setAdminProductActive(id, true) : deactivateAdminProduct(id),
-        ),
-      )
+      await Promise.all(ids.map((id) => setAdminProductActive(id, active)))
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
+  })
+
+  const removeProducts = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => deleteAdminProduct(id)))
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
@@ -192,6 +196,11 @@ function ProductsPage() {
           {adminErrorMessage(setActive.error)}
         </p>
       )}
+      {removeProducts.error && (
+        <p className="mt-6 text-sm text-destructive">
+          {adminErrorMessage(removeProducts.error)}
+        </p>
+      )}
       <AdminProductsTable
         data={data}
         isPending={isPending}
@@ -205,6 +214,8 @@ function ProductsPage() {
         onPageChange={handlePageChange}
         onActivate={(ids) => setActive.mutate({ ids, active: true })}
         onDeactivate={(ids) => setActive.mutate({ ids, active: false })}
+        onDelete={(ids) => removeProducts.mutate(ids)}
+        isDeleting={removeProducts.isPending}
         returnSearch={search}
         filtersContent={
           <ProductFilterFields

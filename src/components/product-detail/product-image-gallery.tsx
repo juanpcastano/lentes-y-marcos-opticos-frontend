@@ -76,7 +76,11 @@ export function ProductImageGallery({
   return (
     <div className="flex flex-col gap-4">
       <ZoomImage src={images[activeIndex]} alt={name} />
-      <Carousel opts={{ align: "start" }} setApi={setApi} className="w-full">
+      <Carousel
+        opts={{ align: "start", skipSnaps: true }}
+        setApi={setApi}
+        className="w-full"
+      >
         <CarouselContent>
           {images.map((img, i) => (
             <CarouselItem key={img + i} className="basis-1/3 sm:basis-1/4">

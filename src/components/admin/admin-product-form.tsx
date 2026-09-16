@@ -61,6 +61,7 @@ import {
   attachExistingAdminImage,
   deleteAdminImage,
   deleteAdminMedia,
+  deleteAdminProduct,
   listAdminGallery,
   reorderAdminImages,
   updateAdminProduct,
@@ -206,6 +207,7 @@ export function AdminProductForm({
   const [activeImageWidth, setActiveImageWidth] = useState<number>()
   const [imageToDelete, setImageToDelete] = useState<AdminImage | null>(null)
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
+  const [deleteProductOpen, setDeleteProductOpen] = useState(false)
   const [orderedImages, setOrderedImages] = useState<AdminImage[]>(
     product?.images ?? [],
   )
@@ -408,6 +410,32 @@ export function AdminProductForm({
           queryKey: ["admin", "media", "gallery"],
         }),
       ])
+    },
+  })
+
+  const deleteProduct = useMutation({
+    mutationFn: () => deleteAdminProduct(product!.id),
+    onSuccess: async () => {
+      // Saca la query de detalle antes de invalidar: el producto ya no
+      // existe y re-pedirlo daría 404 con reintentos (segundos de espera).
+      queryClient.removeQueries({
+        queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product?.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_PRODUCTS_QUERY_KEY,
+      })
+      toast({
+        title: "Producto eliminado",
+        description: "Se eliminó permanentemente del catálogo.",
+      })
+      navigate({ to: "/admin/products", search: returnSearch })
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "No se pudo eliminar el producto",
+        description: error.message,
+      })
     },
   })
 
@@ -999,6 +1027,59 @@ export function AdminProductForm({
           permanentAsset && permanentlyRemoveImage.mutate(permanentAsset)
         }
       />
+
+      {product && (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-destructive">Zona de peligro</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Eliminar quita el producto del catálogo junto con sus variantes de
+              forma permanente. Sus imágenes quedarán disponibles en la galería.
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              className="shrink-0"
+              onClick={() => setDeleteProductOpen(true)}
+            >
+              <Trash2 />
+              Eliminar producto
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <AlertDialog
+        open={deleteProductOpen}
+        onOpenChange={(open) => !open && setDeleteProductOpen(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Eliminar el producto “{product?.name ?? ""}”?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará permanentemente del catálogo junto con sus variantes.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteProduct.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteProduct.isPending}
+              onClick={() => deleteProduct.mutate()}
+            >
+              {deleteProduct.isPending ? "Eliminando..." : "Eliminar"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {save.error && (
         <p className="text-sm text-destructive">

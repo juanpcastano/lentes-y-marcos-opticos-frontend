@@ -19,7 +19,7 @@ export function FeaturedCategories() {
   }
 
   return (
-    <section className="px-4 py-10 md:px-6 lg:px-8">
+    <section className="px-4 pb-6 lg:py-10 md:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-6 flex items-end justify-between">
         <div>

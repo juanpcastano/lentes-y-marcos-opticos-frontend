@@ -1,5 +1,4 @@
-import { Checkbox } from "#/components/ui/checkbox"
-import { Label } from "#/components/ui/label"
+import { FilterChecklist } from "#/components/catalog/filter-checklist"
 
 interface ShapeFilterProps {
   shapes: string[]
@@ -9,22 +8,12 @@ interface ShapeFilterProps {
 
 export function ShapeFilter({ shapes, selected, onToggle }: ShapeFilterProps) {
   return (
-    <div className="space-y-2">
-      {shapes.map((shape) => (
-        <div key={shape} className="flex items-center gap-2">
-          <Checkbox
-            id={`shape-${shape}`}
-            checked={selected.includes(shape)}
-            onCheckedChange={() => onToggle(shape)}
-          />
-          <Label
-            htmlFor={`shape-${shape}`}
-            className="cursor-pointer text-sm font-normal"
-          >
-            {shape}
-          </Label>
-        </div>
-      ))}
-    </div>
+    <FilterChecklist
+      items={shapes}
+      selected={selected}
+      onToggle={onToggle}
+      idPrefix="shape"
+      searchPlaceholder="Buscar forma..."
+    />
   )
 }

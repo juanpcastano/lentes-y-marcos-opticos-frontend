@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Badge, Boxes, Images, Presentation, Tags } from "lucide-react"
+import { Badge, Boxes, Images, Presentation, Tags, Upload } from "lucide-react"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 
@@ -76,6 +76,17 @@ function AdminDashboard() {
               Hero
             </Link>
           </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-24 justify-start px-6 text-2xl"
+          >
+            <Link to="/admin/import">
+              <Upload className="size-8 pr-2" />
+              Importar
+            </Link>
+          </Button>
         </div>
       </section>
 
@@ -84,8 +95,8 @@ function AdminDashboard() {
           <CardTitle>Próximamente</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Los pedidos, citas e importaciones de Softix aparecerán aquí cuando
-          sus fases de backend estén listas.
+          Los pedidos y citas aparecerán aquí cuando sus fases de backend estén
+          listas.
         </CardContent>
       </Card>
     </div>

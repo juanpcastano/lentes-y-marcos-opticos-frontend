@@ -2,7 +2,7 @@ import { Skeleton } from "#/components/ui/skeleton"
 
 export function WhyChooseUsSkeleton() {
   return (
-    <section className="bg-muted px-4 py-10 md:px-6 md:py-16 lg:px-8">
+    <section className="bg-muted px-4 pb-6 lg:py-10 md:px-6 md:py-16 lg:px-8">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:items-center">
         {/* Image skeleton */}
         <Skeleton className="aspect-[4/3] w-full rounded-3xl" />

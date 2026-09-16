@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import Autoplay from "embla-carousel-autoplay"
 import createHeroSlidesQueryOptions from "#/query-options/hero-slides"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "#/components/ui/carousel"
+import type { CarouselApi } from "#/components/ui/carousel"
 import { HeroCarouselSkeleton } from "./hero-carousel-skeleton"
 import { HeroSlide } from "./hero-slide"
 import { CarouselControls } from "./carousel-controls"
 
-const AUTO_PLAY_INTERVAL = 3000
+const AUTO_PLAY_INTERVAL = 5000
 
 export function HeroCarousel() {
   const {
@@ -13,114 +20,82 @@ export function HeroCarousel() {
     isLoading,
     isError,
   } = useQuery(createHeroSlidesQueryOptions())
+  const [api, setApi] = useState<CarouselApi | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const prefersReducedMotion = useRef(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
-  // Keep the active index in range when the slide list changes
-  // (e.g. admin deactivates slides while the home is open)
+  // Autoplay: avanza cada AUTO_PLAY_INTERVAL, no se detiene al
+  // interactuar ni con el mouse encima.
+  const plugins = useMemo(
+    () => [
+      Autoplay({
+        delay: AUTO_PLAY_INTERVAL,
+        stopOnInteraction: false,
+        stopOnMouseEnter: false,
+      }),
+    ],
+    [],
+  )
+
+  // Sincroniza el dot activo con el slide visible (incluye drag/swipe).
+  useEffect(() => {
+    if (!api) return
+    const handleSelect = () => setActiveIndex(api.selectedScrollSnap())
+    handleSelect()
+    api.on("select", handleSelect)
+    api.on("reInit", handleSelect)
+    return () => {
+      api.off("select", handleSelect)
+      api.off("reInit", handleSelect)
+    }
+  }, [api])
+
+  // Mantiene el índice en rango si la lista de slides cambia.
   useEffect(() => {
     setActiveIndex((prev) =>
       slides.length === 0 ? 0 : Math.min(prev, slides.length - 1),
     )
   }, [slides.length])
 
-  // Detect reduced motion preference
+  // Respeta reduced motion.
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-    prefersReducedMotion.current = mediaQuery.matches
-
-    const handler = (e: MediaQueryListEvent) => {
-      prefersReducedMotion.current = e.matches
-      if (e.matches) {
-        clearAutoPlay()
-      }
-    }
+    setPrefersReducedMotion(mediaQuery.matches)
+    const handler = (e: MediaQueryListEvent) =>
+      setPrefersReducedMotion(e.matches)
     mediaQuery.addEventListener("change", handler)
     return () => mediaQuery.removeEventListener("change", handler)
   }, [])
 
-  const clearAutoPlay = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
+  // Detiene el autoplay con reduced motion o un solo slide;
+  // lo pausa cuando la pestaña está oculta.
+  useEffect(() => {
+    if (!api) return
+    const autoplay = getAutoplay(api)
+    if (!autoplay) return
+    if (prefersReducedMotion || slides.length <= 1) {
+      autoplay.stop()
+    } else if (!document.hidden) {
+      autoplay.play()
     }
-  }, [])
+  }, [api, prefersReducedMotion, slides.length])
 
-  const startAutoPlay = useCallback(() => {
-    clearAutoPlay()
-    if (prefersReducedMotion.current || isPaused || slides.length <= 1) return
-
-    timerRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % slides.length)
-    }, AUTO_PLAY_INTERVAL)
-  }, [clearAutoPlay, isPaused, slides.length])
-
-  // Start/stop auto-play based on state
   useEffect(() => {
-    startAutoPlay()
-    return clearAutoPlay
-  }, [startAutoPlay, clearAutoPlay])
-
-  // Pause on window blur / resume on focus
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        clearAutoPlay()
+    if (!api) return
+    const handleVisibility = () => {
+      const autoplay = getAutoplay(api)
+      if (!autoplay) return
+      if (document.hidden || prefersReducedMotion || slides.length <= 1) {
+        autoplay.stop()
       } else {
-        startAutoPlay()
+        autoplay.play()
       }
     }
-    document.addEventListener("visibilitychange", handleVisibilityChange)
+    document.addEventListener("visibilitychange", handleVisibility)
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      document.removeEventListener("visibilitychange", handleVisibility)
     }
-  }, [clearAutoPlay, startAutoPlay])
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") {
-        goToPrevious()
-      } else if (e.key === "ArrowRight") {
-        goToNext()
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [slides.length])
-
-  const goToNext = useCallback(() => {
-    if (slides.length === 0) return
-    setActiveIndex((prev) => (prev + 1) % slides.length)
-    startAutoPlay()
-  }, [slides.length, startAutoPlay])
-
-  const goToPrevious = useCallback(() => {
-    if (slides.length === 0) return
-    setActiveIndex((prev) => (prev - 1 + slides.length) % slides.length)
-    startAutoPlay()
-  }, [slides.length, startAutoPlay])
-
-  const goToSlide = useCallback(
-    (index: number) => {
-      setActiveIndex(index)
-      startAutoPlay()
-    },
-    [startAutoPlay],
-  )
-
-  const handleMouseEnter = useCallback(() => {
-    setIsPaused(true)
-    clearAutoPlay()
-  }, [clearAutoPlay])
-
-  const handleMouseLeave = useCallback(() => {
-    setIsPaused(false)
-    startAutoPlay()
-  }, [startAutoPlay])
+  }, [api, prefersReducedMotion, slides.length])
 
   if (isLoading) {
     return <HeroCarouselSkeleton />
@@ -131,36 +106,45 @@ export function HeroCarousel() {
   }
 
   return (
-    <div
-      ref={containerRef}
-      role="region"
-      aria-roledescription="carousel"
+    <Carousel
+      opts={{ loop: slides.length > 1 }}
+      plugins={plugins}
+      setApi={setApi}
       aria-label="Featured highlights"
-      className="group relative w-full overflow-hidden h-64 md:h-96 lg:h-120 xl:h-150"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className="group relative h-64 w-full overflow-hidden md:h-96 lg:h-120 xl:h-150 [&_[data-slot=carousel-content]]:h-full"
     >
-      {slides.map((slide, index) => (
-        <div
-          key={slide.id}
-          className="absolute inset-0 transition-opacity duration-500 ease-in-out"
-          style={{
-            opacity: index === activeIndex ? 1 : 0,
-            zIndex: index === activeIndex ? 1 : 0,
-          }}
-          aria-hidden={index !== activeIndex}
-        >
-          <HeroSlide slide={slide} />
-        </div>
-      ))}
+      {/* Sin gap entre slides para conservar el look full-bleed actual.
+          Embla aporta el drag/swipe en móvil y escritorio. */}
+      <CarouselContent className="-ml-0 h-full">
+        {slides.map((slide, index) => (
+          <CarouselItem
+            key={slide.id}
+            className="h-full pl-0"
+            aria-hidden={index !== activeIndex}
+          >
+            <HeroSlide slide={slide} />
+          </CarouselItem>
+        ))}
+      </CarouselContent>
 
       <CarouselControls
         total={slides.length}
         activeIndex={activeIndex}
-        onPrevious={goToPrevious}
-        onNext={goToNext}
-        onSelect={goToSlide}
+        onPrevious={() => api?.scrollPrev()}
+        onNext={() => api?.scrollNext()}
+        onSelect={(index) => api?.scrollTo(index)}
       />
-    </div>
+    </Carousel>
   )
+}
+
+interface AutoplayPluginApi {
+  play: () => void
+  stop: () => void
+}
+
+function getAutoplay(api: CarouselApi): AutoplayPluginApi | null {
+  if (!api) return null
+  const plugins = api.plugins() as Record<string, unknown>
+  return (plugins.autoplay as AutoplayPluginApi | undefined) ?? null
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Pencil, Plus, Trash2 } from "lucide-react"
@@ -26,6 +26,13 @@ import { Checkbox } from "#/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "#/components/ui/field"
 import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select"
 import { Textarea } from "#/components/ui/textarea"
 import { toast } from "#/hooks/use-toast"
 import {
@@ -63,6 +70,10 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
   const [editing, setEditing] = useState<TaxonomyItem | null>(null)
   const [deleting, setDeleting] = useState<TaxonomyItem | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [featuredFilter, setFeaturedFilter] = useState<"all" | "featured">(
+    "all",
+  )
   const queryKey = isBrands
     ? ADMIN_BRANDS_QUERY_KEY
     : ADMIN_CATEGORIES_QUERY_KEY
@@ -111,6 +122,26 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
     setFeatured(false)
     setFormOpen(true)
   }
+
+  const visibleItems = useMemo(() => {
+    const needle = search
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+    const sorted = [...data].sort((a, b) =>
+      a.name.localeCompare(b.name, "es-CO", { sensitivity: "base" }),
+    )
+    return sorted.filter((item) => {
+      if (featuredFilter === "featured" && !item.isFeatured) return false
+      if (!needle) return true
+      return item.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .includes(needle)
+    })
+  }, [data, search, featuredFilter])
 
   function startEdit(item: TaxonomyItem) {
     setEditing(item)
@@ -177,7 +208,7 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
           {adminErrorMessage(remove.error)}
         </p>
       )}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden gap-0">
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle>
             {isBrands ? "Marcas registradas" : "Categorías registradas"}
@@ -187,17 +218,49 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
             Añadir
           </Button>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y">
+        <div className="px-6 pt-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              placeholder={
+                isBrands ? "Buscar marcas..." : "Buscar categorías..."
+              }
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label={isBrands ? "Buscar marcas" : "Buscar categorías"}
+              className="sm:flex-1"
+            />
+            <Select
+              value={featuredFilter}
+              onValueChange={(value) =>
+                setFeaturedFilter(value === "featured" ? "featured" : "all")
+              }
+            >
+              <SelectTrigger
+                className="w-full sm:w-44"
+                aria-label="Filtrar destacadas"
+              >
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="featured">Destacadas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <CardContent className="p-0 mt-3">
+          <div className="max-h-[60vh] divide-y overflow-y-auto">
             {isPending && (
               <p className="p-6 text-sm text-muted-foreground">Cargando...</p>
             )}
-            {!isPending && data.length === 0 && (
+            {!isPending && visibleItems.length === 0 && (
               <p className="p-6 text-sm text-muted-foreground">
-                Todavía no hay registros.
+                {search.trim() !== ""
+                  ? "Sin resultados para esta búsqueda."
+                  : "Todavía no hay registros."}
               </p>
             )}
-            {data.map((item) => (
+            {visibleItems.map((item) => (
               <div
                 className="flex items-center justify-between gap-4 px-6 py-4"
                 key={item.id}
@@ -233,6 +296,11 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
             ))}
           </div>
         </CardContent>
+        {!isPending && search.trim() !== "" && (
+          <div className="border-t px-6 py-2 text-xs text-muted-foreground">
+            Mostrando {visibleItems.length} de {data.length} resultados
+          </div>
+        )}
       </Card>
       <Dialog
         open={formOpen}

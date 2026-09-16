@@ -116,7 +116,7 @@ function CatalogPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col gap-8 lg:flex-row">
+      <div className="flex flex-col lg:gap-8 lg:flex-row">
         <aside className="w-full shrink-0 lg:w-64">
           <div className="space-y-6">
             <div>
@@ -129,7 +129,7 @@ function CatalogPage() {
             <Collapsible
               open={mobileFiltersOpen}
               onOpenChange={setMobileFiltersOpen}
-              className="lg:contents lg:hidden"
+              className="lg:contents"
             >
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border px-4 py-3 font-medium lg:hidden">
                 Filtros
