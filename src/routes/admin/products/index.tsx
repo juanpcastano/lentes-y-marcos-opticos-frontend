@@ -18,11 +18,7 @@ import {
   createAdminProductFacetsQueryOptions,
   createAdminProductsQueryOptions,
 } from "#/query-options/admin"
-import {
-  adminErrorMessage,
-  deleteAdminProduct,
-  setAdminProductActive,
-} from "#/services/admin"
+import { adminErrorMessage, deleteAdminProduct } from "#/services/admin"
 
 export const Route = createFileRoute("/admin/products/")({
   validateSearch: adminProductsSearchSchema,
@@ -72,6 +68,7 @@ function ProductsPage() {
       categories: search.categories,
       materials: search.materials,
       shapes: search.shapes,
+      colors: search.colors,
       priceMin: search.priceMin,
       priceMax: search.priceMax,
       onSale: search.onSale,
@@ -93,14 +90,6 @@ function ProductsPage() {
   }, [data, currentPage, navigate])
 
   const queryClient = useQueryClient()
-  const setActive = useMutation({
-    mutationFn: async ({ ids, active }: { ids: string[]; active: boolean }) => {
-      await Promise.all(ids.map((id) => setAdminProductActive(id, active)))
-    },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
-  })
-
   const removeProducts = useMutation({
     mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map((id) => deleteAdminProduct(id)))
@@ -152,6 +141,7 @@ function ProductsPage() {
           next.categories.length > 0 ||
           next.materials.length > 0 ||
           next.shapes.length > 0 ||
+          next.colors.length > 0 ||
           next.priceMin !== undefined ||
           next.priceMax !== undefined ||
           next.onSale !== undefined ||
@@ -191,11 +181,6 @@ function ProductsPage() {
           {adminErrorMessage(error)}
         </p>
       )}
-      {setActive.error && (
-        <p className="mt-6 text-sm text-destructive">
-          {adminErrorMessage(setActive.error)}
-        </p>
-      )}
       {removeProducts.error && (
         <p className="mt-6 text-sm text-destructive">
           {adminErrorMessage(removeProducts.error)}
@@ -210,10 +195,7 @@ function ProductsPage() {
         sort={currentSort}
         onSortChange={handleSortChange}
         page={currentPage}
-        isUpdating={setActive.isPending}
         onPageChange={handlePageChange}
-        onActivate={(ids) => setActive.mutate({ ids, active: true })}
-        onDeactivate={(ids) => setActive.mutate({ ids, active: false })}
         onDelete={(ids) => removeProducts.mutate(ids)}
         isDeleting={removeProducts.isPending}
         returnSearch={search}
@@ -224,6 +206,7 @@ function ProductsPage() {
               categories: categories.map((category) => category.name).sort(),
               materials: facets?.materials ?? [],
               shapes: facets?.shapes ?? [],
+              colors: facets?.colors ?? [],
               priceMin: facets?.minPrice ?? 0,
               priceMax: facets?.maxPrice ?? 0,
             }}

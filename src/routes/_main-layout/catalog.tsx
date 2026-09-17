@@ -26,6 +26,7 @@ const catalogSearchSchema = z.object({
   priceMax: z.number().optional(),
   materials: z.array(z.string()).default([]),
   shapes: z.array(z.string()).default([]),
+  colors: z.array(z.string()).default([]),
   categories: z.array(z.string()).default([]),
   onSale: z.boolean().optional(),
   isNew: z.boolean().optional(),
@@ -71,6 +72,7 @@ function CatalogPage() {
     categories: search.categories,
     materials: search.materials,
     shapes: search.shapes,
+    colors: search.colors,
     priceMin: search.priceMin,
     priceMax: search.priceMax,
     onSale: search.onSale,
@@ -92,6 +94,7 @@ function CatalogPage() {
   )
   const allMaterials = useMemo(() => facets?.materials ?? [], [facets])
   const allShapes = useMemo(() => facets?.shapes ?? [], [facets])
+  const allColors = useMemo(() => facets?.colors ?? [], [facets])
   const allCategories = useMemo(
     () => categories.map((category) => category.name).sort(),
     [categories],
@@ -118,6 +121,7 @@ function CatalogPage() {
           categories: allCategories,
           materials: allMaterials,
           shapes: allShapes,
+          colors: allColors,
           priceMin,
           priceMax,
         }}
@@ -202,7 +206,7 @@ function CatalogPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.variantId} product={product} />
               ))}
             </div>
           )}

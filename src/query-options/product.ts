@@ -8,14 +8,15 @@ export default function createProductQueryOptions<
   TError = Error,
 >(
   id: string,
+  variantId?: string,
   options?: Omit<
     UseQueryOptions<ProductDetail, TError, TData>,
     "queryKey" | "queryFn"
   >,
 ) {
   return queryOptions<ProductDetail, TError, TData>({
-    queryKey: ["product", id],
-    queryFn: () => fetchProductById(id),
+    queryKey: ["product", id, variantId ?? null],
+    queryFn: () => fetchProductById(id, variantId),
     retry: false,
     ...options,
   })

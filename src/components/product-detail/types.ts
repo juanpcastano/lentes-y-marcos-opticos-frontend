@@ -1,19 +1,22 @@
 import type { CatalogProduct } from "#/components/catalog/types"
 
 export interface ProductDetail extends CatalogProduct {
+  variantId: string
   additionalImages: string[]
   originalPrice: number
   discountedPrice: number
   discountPercentage: number
   description: string
   variants: ProductVariant[]
-  isActive: boolean
+  selectedVariant: ProductVariant | null
 }
 
 export interface ProductVariant {
   id: string | null
-  variantName: string | null
+  color: string | null
   sku: string | null
-  imageUrl: string | null
+  price: number | null
+  discountPercentage: number | null
+  discountedPrice: number | null
   isActive: boolean | null
 }

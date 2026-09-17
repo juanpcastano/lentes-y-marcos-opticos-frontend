@@ -10,10 +10,13 @@ export interface AdminImage {
 
 export interface AdminVariant {
   id: string | null
-  variantName: string | null
+  color: string | null
   sku: string | null
-  imageUrl: string | null
+  price: number | null
+  discountPercentage: number | null
+  discountedPrice: number | null
   isActive: boolean
+  images: AdminImage[]
 }
 
 export interface AdminProduct {
@@ -21,16 +24,12 @@ export interface AdminProduct {
   name: string
   brandId: string | null
   brand: string | null
-  basePrice: number
-  discountPercentage: number | null
   material: string | null
   shape: string | null
   description: string | null
   taxRate: number | null
   productType: string
-  isActive: boolean
   categories: string[]
-  images: AdminImage[]
   variants: AdminVariant[]
   createdAt: string
   updatedAt: string
@@ -47,24 +46,33 @@ export interface PageResponse<T> {
 export interface AdminProductInput {
   name: string
   brandId: string | null
-  basePrice: number
-  discountPercentage: number | null
   material: string
   shape: string
   description: string
   taxRate: number | null
   productType: string
-  isActive: boolean
   categories: string[]
   variants: AdminVariantInput[]
 }
 
+export interface AdminStagedImage {
+  imageUrl: string
+}
+
 export interface AdminVariantInput {
   id?: string | null
-  variantName: string
+  color: string
   sku: string
-  imageUrl: string
+  price: number
+  discountPercentage: number | null
   isActive: boolean
+  /**
+   * URLs ya subidas a `variants/` (staging sin referencias). Solo aplican a
+   * variantes nuevas (sin id): al guardar se crean las VariantImage en ese
+   * orden (la primera es la principal). En variantes existentes se ignoran
+   * (sus imágenes se gestionan por endpoints dedicados).
+   */
+  images: AdminStagedImage[]
 }
 
 export interface AdminCategory {
@@ -118,7 +126,7 @@ export interface AdminHeroSlideInput {
   isActive?: boolean
 }
 
-export type AdminMediaFolder = "categories" | "brands" | "products" | "hero"
+export type AdminMediaFolder = "categories" | "brands" | "variants" | "hero"
 
 export interface AdminMediaImage {
   key: string
@@ -132,7 +140,7 @@ export interface AdminMediaReference {
 }
 
 export interface AdminMediaAsset extends AdminMediaImage {
-  folder: "products" | "brands" | "categories" | "hero"
+  folder: "variants" | "brands" | "categories" | "hero"
   references: AdminMediaReference[]
 }
 
@@ -147,6 +155,7 @@ export async function listAdminProducts(params?: {
   onSale?: boolean
   isNew?: boolean
   active?: string
+  colors?: string[]
   page?: number
   sort?: string
 }): Promise<PageResponse<AdminProduct>> {
@@ -158,6 +167,7 @@ export async function listAdminProducts(params?: {
   for (const material of params?.materials ?? [])
     query.append("materials", material)
   for (const shape of params?.shapes ?? []) query.append("shapes", shape)
+  for (const color of params?.colors ?? []) query.append("colors", color)
   if (params?.priceMin !== undefined)
     query.set("priceMin", String(params.priceMin))
   if (params?.priceMax !== undefined)
@@ -191,12 +201,8 @@ export function deleteAdminProduct(id: string) {
   return api.delete<void>(`/admin/products/${id}`)
 }
 
-export function setAdminProductActive(id: string, active: boolean) {
-  return api.patch<void>(`/admin/products/${id}/active?active=${active}`)
-}
-
-export function uploadAdminImage(
-  id: string,
+export function uploadVariantImage(
+  variantId: string,
   file: File,
   primary: boolean,
   onProgress?: (percent: number) => void,
@@ -204,7 +210,7 @@ export function uploadAdminImage(
   const body = new FormData()
   body.append("file", file)
   body.append("primary", String(primary))
-  return api.post<AdminImage>(`/admin/products/${id}/images`, body, {
+  return api.post<AdminImage>(`/admin/variants/${variantId}/images`, body, {
     onUploadProgress: (event) => {
       if (event.total)
         onProgress?.(Math.round((event.loaded / event.total) * 100))
@@ -212,19 +218,19 @@ export function uploadAdminImage(
   })
 }
 
-export function deleteAdminImage(productId: string, imageId: string) {
-  return api.delete<void>(`/admin/products/${productId}/images/${imageId}`)
+export function deleteVariantImage(variantId: string, imageId: string) {
+  return api.delete<void>(`/admin/variants/${variantId}/images/${imageId}`)
 }
 
-export function setAdminPrimaryImage(productId: string, imageId: string) {
+export function setVariantPrimaryImage(variantId: string, imageId: string) {
   return api.put<AdminImage>(
-    `/admin/products/${productId}/images/${imageId}/primary`,
+    `/admin/variants/${variantId}/images/${imageId}/primary`,
   )
 }
 
-export function reorderAdminImages(productId: string, imageIds: string[]) {
+export function reorderVariantImages(variantId: string, imageIds: string[]) {
   return api.put<AdminImage[]>(
-    `/admin/products/${productId}/images/order`,
+    `/admin/variants/${variantId}/images/order`,
     imageIds,
   )
 }
@@ -300,12 +306,12 @@ export function uploadAdminMedia(
   })
 }
 
-export function attachExistingAdminImage(
-  productId: string,
+export function attachExistingVariantImage(
+  variantId: string,
   imageUrl: string,
   primary: boolean,
 ) {
-  return api.post<AdminImage>(`/admin/products/${productId}/images/existing`, {
+  return api.post<AdminImage>(`/admin/variants/${variantId}/images/existing`, {
     imageUrl,
     primary,
   })

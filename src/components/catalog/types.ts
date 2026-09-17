@@ -1,10 +1,13 @@
 export interface CatalogProduct {
-  id: string
-  isActive?: boolean
+  variantId: string
+  productId: string
   imageUrl: string
   name: string
+  color: string
   brand: string
   price: number
+  originalPrice: number
+  discountPercentage: number
   material: string
   shape: string
   categories: string[]

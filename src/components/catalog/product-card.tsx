@@ -35,11 +35,16 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         <h3 className="text-sm font-semibold leading-tight line-clamp-2">
           {product.name}
         </h3>
+        <span className="text-xs text-muted-foreground">{product.color}</span>
         <span className="mt-1 text-sm font-bold text-primary">
           {formatCop(product.price)}
         </span>
         <Button asChild className="mt-auto w-full" variant="default">
-          <Link to="/product/$id" params={{ id: product.id }}>
+          <Link
+            to="/product/$id"
+            params={{ id: product.productId }}
+            search={{ variant: product.variantId }}
+          >
             Ver detalle
           </Link>
         </Button>

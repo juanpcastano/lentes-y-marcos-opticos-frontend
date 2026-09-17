@@ -210,7 +210,11 @@ function CartLineCard({
                 size="sm"
                 className="h-auto w-fit p-0"
               >
-                <Link to="/product/$id" params={{ id: line.productId }}>
+                <Link
+                  to="/product/$id"
+                  params={{ id: line.productId }}
+                  search={{ variant: line.variantId }}
+                >
                   <Eye className="size-3.5" />
                   Ver producto
                 </Link>

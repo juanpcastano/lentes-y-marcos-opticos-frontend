@@ -19,6 +19,7 @@ export function createAdminProductsQueryOptions(params?: {
   categories?: string[]
   materials?: string[]
   shapes?: string[]
+  colors?: string[]
   priceMin?: number
   priceMax?: number
   onSale?: boolean

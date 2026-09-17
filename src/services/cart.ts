@@ -1,13 +1,5 @@
-import { fetchProductById, fetchProducts } from "#/services/products"
-import type { CatalogProduct } from "#/components/catalog/types"
-
-type CartProduct = CatalogProduct & {
-  variants?: Array<{
-    id: string | null
-    variantName: string | null
-    isActive: boolean | null
-  }>
-}
+import { fetchProductById } from "#/services/products"
+import type { ProductDetail } from "#/components/product-detail/types"
 
 export type CartItem = {
   productId: string
@@ -72,11 +64,7 @@ function writePersistedCart(lines: PersistedLine[]): void {
   localStorage.setItem(MOCK_CART_KEY, JSON.stringify(lines))
 }
 
-function toCatalogIndex(products: CartProduct[]): Map<string, CartProduct> {
-  return new Map(products.map((p) => [p.id, p]))
-}
-
-function sameVariantName(left?: string, right?: string | null): boolean {
+function sameColor(left?: string, right?: string | null): boolean {
   return Boolean(
     left && right && left.trim().toLowerCase() === right.trim().toLowerCase(),
   )
@@ -84,23 +72,23 @@ function sameVariantName(left?: string, right?: string | null): boolean {
 
 function resolveLines(
   persisted: PersistedLine[],
-  products: CartProduct[],
+  // Indexado por línea (productId:variantId): el detalle de cada variante
+  // trae su propia imagen principal y no se puede compartir por producto.
+  details: Map<string, ProductDetail>,
 ): { lines: CartLine[]; unavailableItems: CartLine[] } {
-  const index = toCatalogIndex(products)
   const lines: CartLine[] = []
   const unavailableItems: CartLine[] = []
   for (const line of persisted) {
-    const product = index.get(line.productId)
+    const product = details.get(cartLineKey(line.productId, line.variantId))
     const quantity = line.quantity
     const productName =
       product?.name ?? line.productName ?? "Producto no disponible"
-    const unitPrice = line.unitPrice ?? product?.price ?? 0
     const variants = product?.variants ?? []
     const matchingVariant = line.variantId
       ? variants.find(
           (variant) =>
             variant.id === line.variantId ||
-            sameVariantName(line.variantName, variant.variantName),
+            sameColor(line.variantName, variant.color),
         )
       : undefined
     const hasAvailableVariant = variants.some(
@@ -111,27 +99,28 @@ function resolveLines(
       (!line.variantId ||
         !matchingVariant ||
         matchingVariant.isActive === false)
+    const color = matchingVariant?.color ?? line.variantName
+    // Precio vivo de la variante (con descuento); el guardado es respaldo.
+    const unitPrice =
+      matchingVariant?.discountedPrice ?? line.unitPrice ?? product?.price ?? 0
     const cartLine = {
-      productId: product?.id ?? line.productId,
+      productId: product?.productId ?? line.productId,
       variantId: matchingVariant?.id ?? line.variantId,
-      variantName: matchingVariant?.variantName ?? line.variantName,
-      name:
-        (matchingVariant?.variantName ?? line.variantName)
-          ? `${productName} - ${matchingVariant?.variantName ?? line.variantName}`
-          : productName,
-      imageUrl: line.imageUrl ?? product?.imageUrl ?? "",
+      variantName: color ?? undefined,
+      name: color ? `${productName} - ${color}` : productName,
+      imageUrl: product?.imageUrl ?? line.imageUrl ?? "",
       unitPrice,
       quantity,
       lineTotal: unitPrice * quantity,
     }
-    if (product && product.isActive !== false && !variantUnavailable) {
+    if (product && !variantUnavailable) {
       lines.push(cartLine)
     } else {
       unavailableItems.push({
         ...cartLine,
         productId: line.productId,
         name: productName,
-        imageUrl: line.imageUrl ?? "",
+        imageUrl: product?.imageUrl ?? line.imageUrl ?? "",
         unitPrice: line.unitPrice ?? 0,
         lineTotal: 0,
         unavailableReason: variantUnavailable
@@ -153,35 +142,37 @@ async function buildCart(persisted: PersistedLine[]): Promise<Cart> {
   if (persisted.length === 0) {
     return { id: CART_ID, items: [], unavailableItems: [], subtotal: 0 }
   }
-  const { content: products } = await fetchProducts({ size: 50 })
-  const knownIds = new Set(products.map((product) => product.id))
-  const details = await Promise.all(
-    persisted
-      .filter(
-        (line) =>
-          !knownIds.has(line.productId) ||
-          persisted.some(
-            (variantLine) =>
-              variantLine.productId === line.productId &&
-              variantLine.variantId !== undefined,
-          ),
-      )
-      .map((line) => fetchProductById(line.productId).catch(() => null)),
-  )
-  const productsWithDetails = [
-    ...products,
-    ...details.filter((product) => product !== null),
+  const keys = [
+    ...new Set(
+      persisted.map((line) => cartLineKey(line.productId, line.variantId)),
+    ),
   ]
-  const index = toCatalogIndex(productsWithDetails)
+  const entries = await Promise.all(
+    keys.map(async (key) => {
+      const line = persisted.find(
+        (candidate) =>
+          cartLineKey(candidate.productId, candidate.variantId) === key,
+      )!
+      const detail = await fetchProductById(
+        line.productId,
+        line.variantId,
+      ).catch(() => null)
+      return [key, detail] as const
+    }),
+  )
+  const details = new Map<string, ProductDetail>()
+  for (const [key, detail] of entries) {
+    if (detail) details.set(key, detail)
+  }
   const rebound = persisted.map((line) => {
-    const product = index.get(line.productId)
+    const product = details.get(cartLineKey(line.productId, line.variantId))
     const matchingVariant = line.variantId
-      ? product?.variants?.find((variant) =>
-          sameVariantName(line.variantName, variant.variantName),
+      ? product?.variants.find((variant) =>
+          sameColor(line.variantName, variant.color),
         )
       : undefined
     if (!matchingVariant) return line
-    const nextVariantName = matchingVariant.variantName ?? line.variantName
+    const nextVariantName = matchingVariant.color ?? line.variantName
     if (
       matchingVariant.id === line.variantId &&
       nextVariantName === line.variantName
@@ -191,13 +182,13 @@ async function buildCart(persisted: PersistedLine[]): Promise<Cart> {
     return {
       ...line,
       variantId: matchingVariant.id ?? line.variantId,
-      variantName: nextVariantName,
+      variantName: nextVariantName ?? undefined,
     }
   })
   if (rebound.some((line, index) => line !== persisted[index])) {
     writePersistedCart(rebound)
   }
-  const { lines, unavailableItems } = resolveLines(rebound, productsWithDetails)
+  const { lines, unavailableItems } = resolveLines(rebound, details)
   return {
     id: CART_ID,
     items: lines,
@@ -223,7 +214,7 @@ export async function addToCart(
   productName?: string,
 ): Promise<Cart> {
   const lines = readPersistedCart()
-  const key = cartLineKey(productId, variant?.id)
+  const key = cartLineKey(productId, variant.id)
   const existing = lines.find(
     (line) => cartLineKey(line.productId, line.variantId) === key,
   )
@@ -233,11 +224,11 @@ export async function addToCart(
     lines.push({
       productId,
       quantity,
-      variantId: variant?.id,
-      variantName: variant?.name,
-      productName: productName ?? variant?.productName,
-      imageUrl: variant?.imageUrl ?? undefined,
-      unitPrice: variant?.price,
+      variantId: variant.id,
+      variantName: variant.name,
+      productName: productName ?? variant.productName,
+      imageUrl: variant.imageUrl ?? undefined,
+      unitPrice: variant.price,
     })
   }
   writePersistedCart(lines)

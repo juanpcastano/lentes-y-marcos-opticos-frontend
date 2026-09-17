@@ -76,7 +76,7 @@ export interface AdminProductsFilters {
 }
 
 export interface AdminProductsSort {
-  field: "name" | "brand" | "basePrice" | "isActive" | "createdAt" | "updatedAt"
+  field: "name" | "brand" | "createdAt" | "updatedAt"
   direction: "asc" | "desc"
 }
 
@@ -91,10 +91,7 @@ interface AdminProductsTableProps {
     | undefined
   onSortChange: (sort: AdminProductsSort | undefined) => void
   page: number
-  isUpdating: boolean
   onPageChange: (page: number) => void
-  onActivate: (ids: string[]) => void
-  onDeactivate: (ids: string[]) => void
   onDelete: (ids: string[]) => void
   isDeleting: boolean
   returnSearch: AdminProductsSearch
@@ -104,8 +101,8 @@ interface AdminProductsTableProps {
 const COLUMN_LABELS: Record<string, string> = {
   name: "Producto",
   brand: "Marca",
-  basePrice: "Precio",
-  isActive: "Estado",
+  price: "Precio",
+  status: "Estado",
   createdAt: "Creación",
   updatedAt: "Última edición",
 }
@@ -118,14 +115,6 @@ const SORT_OPTIONS: Record<string, { label: string; desc: boolean }[]> = {
   brand: [
     { label: "De la A a la Z", desc: false },
     { label: "De la Z a la A", desc: true },
-  ],
-  basePrice: [
-    { label: "De mayor a menor", desc: true },
-    { label: "De menor a mayor", desc: false },
-  ],
-  isActive: [
-    { label: "Activos primero", desc: true },
-    { label: "Inactivos primero", desc: false },
   ],
   createdAt: [
     { label: "Más recientes primero", desc: true },
@@ -146,6 +135,68 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat("es-CO", {
     dateStyle: "medium",
   }).format(new Date(value))
+}
+
+function formatPrice(value: number): string {
+  return `$${value.toLocaleString("es-CO")}`
+}
+
+function VariantStatusCell({ product }: { product: AdminProduct }) {
+  const total = product.variants.length
+  const activeCount = product.variants.filter(
+    (variant) => variant.isActive,
+  ).length
+  if (total === 0) {
+    return (
+      <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+        Sin variantes
+      </span>
+    )
+  }
+  if (activeCount === total) {
+    return (
+      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
+        Activo
+      </span>
+    )
+  }
+  if (activeCount === 0) {
+    return (
+      <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+        Inactivo
+      </span>
+    )
+  }
+  return (
+    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+      {`Parcial ${activeCount}/${total}`}
+    </span>
+  )
+}
+
+function VariantPriceCell({ product }: { product: AdminProduct }) {
+  const prices = product.variants
+    .map((variant) => variant.discountedPrice ?? variant.price ?? 0)
+    .filter((price) => price > 0)
+  if (prices.length === 0) {
+    return <span className="text-muted-foreground">Sin precio</span>
+  }
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  return (
+    <div>
+      <p>
+        {min === max
+          ? formatPrice(min)
+          : `${formatPrice(min)} – ${formatPrice(max)}`}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {product.variants.length === 1
+          ? "1 variante"
+          : `${product.variants.length} variantes`}
+      </p>
+    </div>
+  )
 }
 
 function getPageItems(
@@ -226,10 +277,7 @@ export function AdminProductsTable({
   sort,
   onSortChange,
   page,
-  isUpdating,
   onPageChange,
-  onActivate,
-  onDeactivate,
   onDelete,
   isDeleting,
   returnSearch,
@@ -241,19 +289,10 @@ export function AdminProductsTable({
   const [rowSelection, setRowSelection] = useState<
     LegacyReactTable<AdminProduct>["state"]["rowSelection"]
   >({})
-  const [pendingChange, setPendingChange] = useState<{
-    ids: string[]
-    active: boolean
-  } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
 
-  function requestChange(ids: string[], active: boolean) {
-    if (ids.length === 0 || isUpdating || isDeleting) return
-    setPendingChange({ ids, active })
-  }
-
   function requestDelete(ids: string[]) {
-    if (ids.length === 0 || isUpdating || isDeleting) return
+    if (ids.length === 0 || isDeleting) return
     setPendingDelete(ids)
   }
 
@@ -327,24 +366,16 @@ export function AdminProductsTable({
         cell: ({ row }) => row.original.brand ?? "Sin marca",
       },
       {
-        accessorKey: "basePrice",
-        header: ({ column }) => <ColumnHeader column={column} title="Precio" />,
-        cell: ({ row }) => `$${row.original.basePrice.toLocaleString("es-CO")}`,
+        id: "price",
+        enableSorting: false,
+        header: "Precio",
+        cell: ({ row }) => <VariantPriceCell product={row.original} />,
       },
       {
-        accessorKey: "isActive",
-        header: ({ column }) => <ColumnHeader column={column} title="Estado" />,
-        cell: ({ row }) => (
-          <span
-            className={
-              row.original.isActive
-                ? "rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground"
-                : "rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
-            }
-          >
-            {row.original.isActive ? "Activo" : "Inactivo"}
-          </span>
-        ),
+        id: "status",
+        enableSorting: false,
+        header: "Estado",
+        cell: ({ row }) => <VariantStatusCell product={row.original} />,
       },
       {
         accessorKey: "createdAt",
@@ -387,26 +418,9 @@ export function AdminProductsTable({
                   Editar producto
                 </Link>
               </DropdownMenuItem>
-              {row.original.isActive ? (
-                <DropdownMenuItem
-                  disabled={isUpdating || isDeleting}
-                  onClick={() => requestChange([row.original.id], false)}
-                >
-                  {isUpdating && <LoaderCircle className="animate-spin" />}
-                  Desactivar producto
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  disabled={isUpdating || isDeleting}
-                  onClick={() => requestChange([row.original.id], true)}
-                >
-                  {isUpdating && <LoaderCircle className="animate-spin" />}
-                  Activar producto
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                disabled={isUpdating || isDeleting}
+                disabled={isDeleting}
                 onClick={() => requestDelete([row.original.id])}
               >
                 {isDeleting && <LoaderCircle className="animate-spin" />}
@@ -417,7 +431,7 @@ export function AdminProductsTable({
         ),
       },
     ],
-    [isUpdating, isDeleting, onActivate, onDeactivate],
+    [isDeleting],
   )
 
   const rows = data?.content ?? []
@@ -448,11 +462,6 @@ export function AdminProductsTable({
   const firstVisible = totalElements === 0 ? 0 : page * pageSize + 1
   const lastVisible = page * pageSize + rows.length
   const hasActiveFilters = q.trim() !== "" || active !== undefined
-  const pendingProductNames = (pendingChange?.ids ?? [])
-    .map((id) => rows.find((row) => row.id === id)?.name)
-    .filter((name): name is string => Boolean(name))
-  const pendingCount = pendingChange?.ids.length ?? 0
-  const pendingActionLabel = pendingChange?.active ? "Activar" : "Desactivar"
   const pendingDeleteNames = (pendingDelete ?? [])
     .map((id) => rows.find((row) => row.id === id)?.name)
     .filter((name): name is string => Boolean(name))
@@ -496,42 +505,15 @@ export function AdminProductsTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="true">Activos</SelectItem>
-            <SelectItem value="false">Inactivos</SelectItem>
+            <SelectItem value="true">Visibles en tienda</SelectItem>
+            <SelectItem value="false">Ocultos</SelectItem>
           </SelectContent>
         </Select>
         {selectedRows.length > 0 && (
           <div className="flex gap-2">
             <Button
-              disabled={isUpdating || isDeleting}
-              onClick={() =>
-                requestChange(
-                  selectedRows.map((row) => row.original.id),
-                  true,
-                )
-              }
-            >
-              {isUpdating && <LoaderCircle className="animate-spin" />}
-              {isUpdating ? "Activando..." : `Activar (${selectedRows.length})`}
-            </Button>
-            <Button
               variant="destructive"
-              disabled={isUpdating || isDeleting}
-              onClick={() =>
-                requestChange(
-                  selectedRows.map((row) => row.original.id),
-                  false,
-                )
-              }
-            >
-              {isUpdating && <LoaderCircle className="animate-spin" />}
-              {isUpdating
-                ? "Desactivando..."
-                : `Desactivar (${selectedRows.length})`}
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={isUpdating || isDeleting}
+              disabled={isDeleting}
               onClick={() =>
                 requestDelete(selectedRows.map((row) => row.original.id))
               }
@@ -721,55 +703,6 @@ export function AdminProductsTable({
           </Pagination>
         )}
       </div>
-      <AlertDialog
-        open={pendingChange !== null}
-        onOpenChange={(open) => !open && setPendingChange(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingCount > 1
-                ? `¿${pendingActionLabel} ${pendingCount} productos?`
-                : `¿${pendingActionLabel} el producto “${pendingProductNames[0] ?? ""}”?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingChange?.active
-                ? "Los productos volverán a estar visibles en la tienda."
-                : "Los productos dejarán de estar visibles en la tienda y no se podrán comprar. Esta acción se puede revertir."}
-              {pendingProductNames.length > 1 && (
-                <>
-                  {" "}
-                  Productos: {pendingProductNames.slice(0, 3).join(", ")}
-                  {pendingProductNames.length > 3 &&
-                    ` y ${pendingProductNames.length - 3} más`}
-                  .
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isUpdating}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant={pendingChange?.active ? "default" : "destructive"}
-              disabled={isUpdating || !pendingChange}
-              onClick={() => {
-                if (!pendingChange) return
-                if (pendingChange.active) onActivate(pendingChange.ids)
-                else onDeactivate(pendingChange.ids)
-                setPendingChange(null)
-              }}
-            >
-              {isUpdating
-                ? "Aplicando..."
-                : pendingChange?.active
-                  ? "Activar"
-                  : "Desactivar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}

@@ -15,6 +15,7 @@ export interface ProductsParams {
   brands?: string[]
   materials?: string[]
   shapes?: string[]
+  colors?: string[]
   priceMin?: number
   priceMax?: number
   onSale?: boolean
@@ -28,6 +29,7 @@ export interface ProductsParams {
 export interface ProductFacets {
   materials: string[]
   shapes: string[]
+  colors: string[]
   minPrice: number | null
   maxPrice: number | null
 }
@@ -49,6 +51,9 @@ export async function fetchProducts(
   for (const shape of params.shapes ?? []) {
     search.append("shapes", shape)
   }
+  for (const color of params.colors ?? []) {
+    search.append("colors", color)
+  }
 
   if (params.priceMin !== undefined)
     search.set("priceMin", String(params.priceMin))
@@ -64,8 +69,14 @@ export async function fetchProducts(
   return api.get<ProductPage>(`/products?${search.toString()}`)
 }
 
-export async function fetchProductById(id: string): Promise<ProductDetail> {
-  return api.get<ProductDetail>(`/products/${id}`)
+export async function fetchProductById(
+  id: string,
+  variantId?: string,
+): Promise<ProductDetail> {
+  const search = new URLSearchParams()
+  if (variantId) search.set("variant", variantId)
+  const query = search.toString()
+  return api.get<ProductDetail>(`/products/${id}${query ? `?${query}` : ""}`)
 }
 
 export async function fetchProductFacets(): Promise<ProductFacets> {

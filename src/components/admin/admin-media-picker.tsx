@@ -42,6 +42,9 @@ export function AdminMediaPicker({
     allowUpload ? "upload" : "existing",
   )
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<number | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
   const queryKey = [...MEDIA_QUERY_KEY, folder]
   const media = useQuery({
     queryKey,
@@ -49,13 +52,19 @@ export function AdminMediaPicker({
     enabled: open && tab === "existing",
   })
   const upload = useMutation({
-    mutationFn: (file: File) => uploadAdminMedia(folder, file),
+    mutationFn: (file: File) =>
+      uploadAdminMedia(folder, file, (percent) => setProgress(percent)),
     onSuccess: async (image) => {
       onChange(image.imageUrl)
       await queryClient.invalidateQueries({ queryKey })
+      if (preview) URL.revokeObjectURL(preview)
+      setPreview(null)
+      setFileName(null)
+      setProgress(null)
       setOpen(false)
     },
     onError: (uploadError) => setError(uploadError.message),
+    onSettled: () => setProgress(null),
   })
 
   function openPicker(nextTab: "upload" | "existing") {
@@ -87,8 +96,24 @@ export function AdminMediaPicker({
       onFiles(files)
       setOpen(false)
     } else {
-      upload.mutate(files[0])
+      const file = files[0]
+      if (preview) URL.revokeObjectURL(preview)
+      setPreview(URL.createObjectURL(file))
+      setFileName(file.name)
+      setProgress(0)
+      upload.mutate(file)
     }
+  }
+
+  function closeDialog(nextOpen: boolean) {
+    if (!nextOpen && upload.isPending) return
+    if (!nextOpen && preview) {
+      URL.revokeObjectURL(preview)
+      setPreview(null)
+      setFileName(null)
+      setProgress(null)
+    }
+    setOpen(nextOpen)
   }
 
   return (
@@ -126,7 +151,7 @@ export function AdminMediaPicker({
           </p>
         </div>
       )}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={closeDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader className="pb-3">
             <DialogTitle>Imagen existente</DialogTitle>
@@ -172,6 +197,35 @@ export function AdminMediaPicker({
               <p className="text-sm text-muted-foreground">
                 JPG, PNG o WebP. Máximo 10 MB.
               </p>
+              {preview && !onFiles && (
+                <div className="w-full max-w-xs space-y-2">
+                  <img
+                    src={preview}
+                    alt={fileName ?? "Vista previa"}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                  <p className="truncate text-xs text-muted-foreground">
+                    {fileName}
+                  </p>
+                  <div
+                    className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={progress ?? 0}
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width]"
+                      style={{ width: `${progress ?? 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-medium">
+                    {upload.isPending
+                      ? `Subiendo... ${progress ?? 0}%`
+                      : "Listo para subir"}
+                  </p>
+                </div>
+              )}
               <Button
                 type="button"
                 onClick={() => inputRef.current?.click()}

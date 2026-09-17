@@ -95,15 +95,20 @@ export function SearchInput({
     onNavigate?.()
   }
 
-  const goToProduct = (id: string) => {
-    navigate({ to: "/product/$id", params: { id } })
+  const goToProduct = (productId: string, variantId: string) => {
+    navigate({
+      to: "/product/$id",
+      params: { id: productId },
+      search: { variant: variantId },
+    })
     close()
     onNavigate?.()
   }
 
   const submit = () => {
     if (activeIndex >= 0 && activeIndex < suggestions.length) {
-      goToProduct(suggestions[activeIndex].id)
+      const suggestion = suggestions[activeIndex]
+      goToProduct(suggestion.productId, suggestion.variantId)
       return
     }
     goToCatalog(value)
@@ -171,7 +176,7 @@ export function SearchInput({
             <>
               {suggestions.map((product, index) => (
                 <button
-                  key={product.id}
+                  key={product.variantId}
                   type="button"
                   role="option"
                   aria-selected={index === activeIndex}
@@ -179,7 +184,9 @@ export function SearchInput({
                     index === activeIndex ? "bg-muted" : ""
                   }`}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => goToProduct(product.id)}
+                  onClick={() =>
+                    goToProduct(product.productId, product.variantId)
+                  }
                 >
                   {product.imageUrl ? (
                     <img
@@ -197,7 +204,7 @@ export function SearchInput({
                       {product.name}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {[product.brand, formatCop(product.price)]
+                      {[product.brand, product.color, formatCop(product.price)]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>

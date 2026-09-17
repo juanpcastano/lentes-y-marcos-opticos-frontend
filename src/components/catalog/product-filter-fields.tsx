@@ -1,5 +1,6 @@
 import { BrandFilter } from "#/components/catalog/brand-filter"
 import { CategoryFilter } from "#/components/catalog/category-filter"
+import { ColorFilter } from "#/components/catalog/color-filter"
 import { MaterialFilter } from "#/components/catalog/material-filter"
 import { PriceFilter } from "#/components/catalog/price-filter"
 import { ShapeFilter } from "#/components/catalog/shape-filter"
@@ -14,6 +15,7 @@ export interface ProductFilterValues {
   categories: string[]
   materials: string[]
   shapes: string[]
+  colors: string[]
   priceMin?: number
   priceMax?: number
   onSale?: boolean
@@ -26,6 +28,7 @@ interface ProductFilterFieldsProps {
     categories: string[]
     materials: string[]
     shapes: string[]
+    colors: string[]
     priceMin: number
     priceMax: number
   }
@@ -75,6 +78,7 @@ export function ProductFilterFields({
             categories: [],
             materials: [],
             shapes: [],
+            colors: [],
             priceMin: undefined,
             priceMax: undefined,
             onSale: undefined,
@@ -171,6 +175,20 @@ export function ProductFilterFields({
             selected={values.shapes}
             onToggle={(shape) =>
               onChange({ shapes: toggleValue(values.shapes, shape) })
+            }
+          />
+        )}
+      </FilterSection>
+
+      <FilterSection title="Color">
+        {loadingFacets ? (
+          <FilterChecklistSkeleton rows={4} />
+        ) : (
+          <ColorFilter
+            colors={options.colors}
+            selected={values.colors}
+            onToggle={(color) =>
+              onChange({ colors: toggleValue(values.colors, color) })
             }
           />
         )}

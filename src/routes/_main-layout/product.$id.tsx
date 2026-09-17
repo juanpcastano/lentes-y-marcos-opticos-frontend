@@ -1,12 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, ShoppingCart } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import createProductQueryOptions from "#/query-options/product"
 import createCartQueryOptions, { CART_QUERY_KEY } from "#/query-options/cart"
 import { addToCart, cartLineKey } from "#/services/cart"
 import type { Cart } from "#/services/cart"
+import type { ProductVariant } from "#/components/product-detail/types"
 import { formatCop } from "#/services/orders"
 import { Button } from "#/components/ui/button"
 import {
@@ -31,53 +32,74 @@ import { ProductPrice } from "#/components/product-detail/product-price"
 import { RelatedProducts } from "#/components/product-detail/related-products"
 import { useAuth } from "#/components/auth-provider"
 
+type SelectableVariant = ProductVariant & { id: string }
+
 export const Route = createFileRoute("/_main-layout/product/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    variant: typeof search.variant === "string" ? search.variant : undefined,
+  }),
   component: ProductDetailPage,
 })
 
 function ProductDetailPage() {
   const { id } = Route.useParams()
-  const navigate = useNavigate()
+  const { variant: variantParam } = Route.useSearch()
+  const navigate = Route.useNavigate()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [submitting, setSubmitting] = useState(false)
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
-    null,
-  )
   const [cartSheetOpen, setCartSheetOpen] = useState(false)
   const {
     data: product,
     isLoading,
     isError,
-  } = useQuery(createProductQueryOptions(id))
+  } = useQuery(createProductQueryOptions(id, variantParam))
   const { data: cart } = useQuery({
     ...createCartQueryOptions(),
     enabled: !!user,
   })
   const availableVariants =
     product?.variants.filter(
-      (variant): variant is typeof variant & { id: string } =>
+      (variant): variant is SelectableVariant =>
         variant.isActive !== false && variant.id !== null,
     ) ?? []
-  const selectedVariant =
-    availableVariants.find((variant) => variant.id === selectedVariantId) ??
-    availableVariants[0]
+  const selectedVariant: SelectableVariant | undefined =
+    availableVariants.find((variant) => variant.id === variantParam) ??
+    (product?.selectedVariant?.id
+      ? (availableVariants.find(
+          (variant) => variant.id === product.selectedVariant?.id,
+        ) ?? availableVariants.at(0))
+      : availableVariants.at(0))
   const variantPrice = product?.price ?? 0
+
+  // Si la URL trae una variante no disponible (inactiva o de otro producto),
+  // se redirige al fallback para que URL, precio, galería y carrito coincidan.
+  useEffect(() => {
+    if (!product || availableVariants.length === 0) return
+    if (
+      variantParam &&
+      !availableVariants.some((variant) => variant.id === variantParam)
+    ) {
+      navigate({
+        search: { variant: selectedVariant?.id },
+        resetScroll: false,
+      })
+    }
+  }, [product, variantParam, availableVariants, selectedVariant, navigate])
 
   const addToCartMutation = useMutation({
     mutationFn: () => {
-      if (!product || availableVariants.length === 0) {
+      if (!product || availableVariants.length === 0 || !selectedVariant) {
         throw new Error("El producto no tiene variantes disponibles.")
       }
-      const variant = selectedVariant
       return addToCart(
-        product.id,
+        product.productId,
         1,
         {
-          id: variant.id,
-          name: variant.variantName ?? "Variante",
+          id: selectedVariant.id,
+          name: selectedVariant.color ?? "Color",
           productName: product.name,
-          imageUrl: variant.imageUrl,
+          imageUrl: product.imageUrl,
           price: variantPrice,
         },
         product.name,
@@ -90,12 +112,12 @@ function ProductDetailPage() {
         const updatedItems = [
           ...previous.items,
           {
-            productId: product.id,
+            productId: product.productId,
             name: product.name,
             imageUrl: product.imageUrl,
             variantId: selectedVariant?.id ?? undefined,
             variantName: selectedVariant
-              ? (selectedVariant.variantName ?? "Variante")
+              ? (selectedVariant.color ?? "Color")
               : undefined,
             unitPrice: variantPrice,
             quantity: 1,
@@ -131,14 +153,21 @@ function ProductDetailPage() {
     (item) => cartLineKey(item.productId, item.variantId) === selectedLineKey,
   )
 
+  function handleVariantChange(variantId: string) {
+    navigate({ search: { variant: variantId }, resetScroll: false })
+  }
+
   function handleAddToCart() {
     if (submitting || addToCartMutation.isPending) return
-    if (!product?.isActive) return
     if (availableVariants.length === 0) return
     if (!user) {
       navigate({
         to: "/login",
-        search: { redirect: `/product/${id}` },
+        search: {
+          redirect: selectedVariant
+            ? `/product/${id}?variant=${selectedVariant.id}`
+            : `/product/${id}`,
+        },
       })
       return
     }
@@ -200,6 +229,11 @@ function ProductDetailPage() {
           <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
             {product.name}
           </h1>
+          {product.color && (
+            <p className="text-sm text-muted-foreground">
+              Color: <span className="font-medium">{product.color}</span>
+            </p>
+          )}
 
           <ProductPrice
             originalPrice={product.originalPrice}
@@ -224,19 +258,19 @@ function ProductDetailPage() {
 
           {availableVariants.length > 0 && (
             <div className="grid gap-2 text-sm font-medium">
-              <span>Variante</span>
+              <span>Color</span>
               <Select
                 value={selectedVariant?.id ?? undefined}
-                onValueChange={setSelectedVariantId}
+                onValueChange={handleVariantChange}
                 disabled={availableVariants.length === 1}
               >
                 <SelectTrigger className="w-full font-normal">
-                  <SelectValue placeholder="Selecciona una variante" />
+                  <SelectValue placeholder="Selecciona un color" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableVariants.map((variant) => (
-                    <SelectItem key={variant.id} value={variant.id ?? ""}>
-                      {variant.variantName ?? "Variante"}
+                    <SelectItem key={variant.id} value={variant.id}>
+                      {variant.color ?? "Color"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -259,16 +293,13 @@ function ProductDetailPage() {
             size="lg"
             className="mt-2 w-full sm:w-auto"
             disabled={
-              !product.isActive ||
               availableVariants.length === 0 ||
               submitting ||
               addToCartMutation.isPending
             }
             onClick={handleAddToCart}
           >
-            {!product.isActive ? (
-              "No disponible ahora mismo"
-            ) : availableVariants.length === 0 ? (
+            {availableVariants.length === 0 ? (
               "Sin variantes disponibles"
             ) : submitting || addToCartMutation.isPending ? (
               <>
@@ -303,7 +334,7 @@ function ProductDetailPage() {
           </SheetHeader>
           <div className="flex gap-4 px-6">
             <img
-              src={selectedVariant?.imageUrl ?? product.imageUrl}
+              src={product.imageUrl}
               alt={product.name}
               className="size-20 rounded-xl object-cover"
             />
@@ -311,7 +342,7 @@ function ProductDetailPage() {
               <p className="font-medium">{product.name}</p>
               {selectedVariant && (
                 <p className="text-sm text-muted-foreground">
-                  {selectedVariant.variantName ?? "Variante"}
+                  {selectedVariant.color ?? "Color"}
                 </p>
               )}
               <p className="text-sm font-medium">{formatCop(variantPrice)}</p>
@@ -328,7 +359,10 @@ function ProductDetailPage() {
         </SheetContent>
       </Sheet>
 
-      <RelatedProducts currentId={product.id} categories={product.categories} />
+      <RelatedProducts
+        currentId={product.productId}
+        categories={product.categories}
+      />
     </div>
   )
 }
