@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   Carousel,
   CarouselContent,
@@ -61,10 +61,19 @@ export function ProductImageGallery({
   const [api, setApi] = useState<CarouselApi>()
   const [canScroll, setCanScroll] = useState(false)
 
+  const opts = useMemo(
+    () => ({
+      align: "start" as const,
+      containScroll: "trimSnaps" as const,
+      duration: 25,
+    }),
+    [],
+  )
+
   useEffect(() => {
     if (!api) return
     function update() {
-      setCanScroll(api.scrollSnapList().length > 1)
+      setCanScroll((api?.scrollSnapList().length ?? 0) > 1)
     }
     update()
     api.on("reInit", update)
@@ -76,11 +85,7 @@ export function ProductImageGallery({
   return (
     <div className="flex flex-col gap-4">
       <ZoomImage src={images[activeIndex]} alt={name} />
-      <Carousel
-        opts={{ align: "start", skipSnaps: true }}
-        setApi={setApi}
-        className="w-full"
-      >
+      <Carousel opts={opts} setApi={setApi} className="w-full">
         <CarouselContent>
           {images.map((img, i) => (
             <CarouselItem key={img + i} className="basis-1/3 sm:basis-1/4">
@@ -108,8 +113,8 @@ export function ProductImageGallery({
         </CarouselContent>
         {canScroll && (
           <>
-            <CarouselPrevious className="left-2 z-10 bg-background/80 shadow-sm backdrop-blur-sm dark:bg-background/80" />
-            <CarouselNext className="right-2 z-10 bg-background/80 shadow-sm backdrop-blur-sm dark:bg-background/80" />
+            <CarouselPrevious className="left-2 z-10 bg-background/80 shadow-sm dark:bg-background/80" />
+            <CarouselNext className="right-2 z-10 bg-background/80 shadow-sm dark:bg-background/80" />
           </>
         )}
       </Carousel>

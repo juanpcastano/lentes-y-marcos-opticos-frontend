@@ -32,6 +32,17 @@ export function RelatedProducts({
       .slice(0, 10)
   }, [products, currentId, categories])
 
+  const opts = useMemo(
+    () => ({
+      loop: true,
+      align: "start" as const,
+      containScroll: "trimSnaps" as const,
+      skipSnaps: true,
+      duration: 25,
+    }),
+    [],
+  )
+
   if (related.length === 0) return null
 
   return (
@@ -46,10 +57,7 @@ export function RelatedProducts({
       </div>
 
       <div className="px-12">
-        <Carousel
-          opts={{ loop: true, align: "start", skipSnaps: true }}
-          className="w-full"
-        >
+        <Carousel opts={opts} className="w-full">
           <CarouselContent>
             {related.map((product) => (
               <CarouselItem
@@ -81,7 +89,9 @@ function RelatedProductCard({ product }: { product: CatalogProduct }) {
         alt={product.name}
         containerClassName="aspect-[4/3] w-full"
         className="size-full object-cover"
+        skeletonClassName="animate-none"
         loading="lazy"
+        fetchPriority="low"
       />
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="text-sm font-semibold leading-tight line-clamp-2">

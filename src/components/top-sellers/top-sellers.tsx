@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ChevronRight } from "lucide-react"
@@ -22,6 +22,7 @@ export function TopSellers() {
 
   const [api, setApi] = useState<CarouselApi | null>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
+  const rootRef = useRef<HTMLElement>(null)
 
   // Build autoplay plugin once. stopOnMouseEnter handles the hover-pause ask.
   const plugins = useMemo(
@@ -35,33 +36,59 @@ export function TopSellers() {
     [],
   )
 
-  // Reduced motion: stop autoplay entirely.
-  useEffect(() => {
-    if (!api) return
-    const autoplay = getAutoplay(api)
-    if (!autoplay) return
-    if (prefersReducedMotion || products.length <= 1) {
-      autoplay.stop()
-    } else {
-      autoplay.play()
-    }
-  }, [api, prefersReducedMotion, products.length])
+  // opts estable: evita reInit de Embla en cada render.
+  const opts = useMemo(
+    () => ({
+      loop: true,
+      align: "start" as const,
+      containScroll: "trimSnaps" as const,
+      skipSnaps: true,
+      duration: 25,
+    }),
+    [],
+  )
 
-  // Pause when tab is hidden; resume when visible (respecting reduced motion).
+  // Control único del autoplay: se pausa fuera de pantalla, con la
+  // pestaña oculta o con reduced motion. Dos carruseles con autoplay
+  // corriendo a la vez saturan el main thread en la página principal.
   useEffect(() => {
     if (!api) return
     const autoplay = getAutoplay(api)
     if (!autoplay) return
-    const handleVisibility = () => {
-      if (document.hidden || prefersReducedMotion || products.length <= 1) {
+
+    let inView = true
+    const update = () => {
+      if (
+        prefersReducedMotion ||
+        products.length <= 1 ||
+        document.hidden ||
+        !inView
+      ) {
         autoplay.stop()
       } else {
         autoplay.play()
       }
     }
-    document.addEventListener("visibilitychange", handleVisibility)
+
+    update()
+
+    const el = rootRef.current
+    const observer =
+      el != null
+        ? new IntersectionObserver(
+            ([entry]) => {
+              inView = entry.isIntersecting
+              update()
+            },
+            { threshold: 0.15 },
+          )
+        : null
+    if (el != null && observer != null) observer.observe(el)
+
+    document.addEventListener("visibilitychange", update)
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility)
+      document.removeEventListener("visibilitychange", update)
+      observer?.disconnect()
     }
   }, [api, prefersReducedMotion, products.length])
 
@@ -74,7 +101,7 @@ export function TopSellers() {
   }
 
   return (
-    <section className="px-4 py-6 lg:py-10 md:px-6 lg:px-8">
+    <section ref={rootRef} className="px-4 py-6 lg:py-10 md:px-6 lg:px-8">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h2 className="mb-1 text-2xl font-bold md:text-3xl">
@@ -96,7 +123,7 @@ export function TopSellers() {
 
       <div className="px-12">
         <Carousel
-          opts={{ loop: true, align: "start", skipSnaps: true }}
+          opts={opts}
           plugins={plugins}
           setApi={setApi}
           className="w-full"

@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react"
 import { Link } from "@tanstack/react-router"
 import { Button } from "#/components/ui/button"
 import { Image } from "#/components/ui/image"
@@ -5,6 +6,7 @@ import type { HeroSlide as HeroSlideType } from "./types"
 
 interface HeroSlideProps {
   slide: HeroSlideType
+  eager?: boolean
 }
 
 /** Convierte "1", "true", "[\"a\"]" a su tipo real para el search del router. */
@@ -46,9 +48,13 @@ function splitActionTarget(href: string): {
   return Object.keys(search).length > 0 ? { to, search } : { to }
 }
 
-export function HeroSlide({ slide }: HeroSlideProps) {
-  const internalActions = slide.actions.filter((action) =>
-    action.to.startsWith("/"),
+export const HeroSlide = memo(function HeroSlide({
+  slide,
+  eager = false,
+}: HeroSlideProps) {
+  const internalActions = useMemo(
+    () => slide.actions.filter((action) => action.to.startsWith("/")),
+    [slide.actions],
   )
   return (
     <div className="relative h-full w-full">
@@ -57,7 +63,9 @@ export function HeroSlide({ slide }: HeroSlideProps) {
         alt={slide.title}
         containerClassName="absolute inset-0 h-full w-full"
         className="h-full w-full object-cover"
-        loading="lazy"
+        skeletonClassName="animate-none rounded-none"
+        loading={eager ? "eager" : "lazy"}
+        fetchPriority={eager ? "high" : "low"}
       />
 
       {/* Gradient overlay for text readability */}
@@ -96,4 +104,4 @@ export function HeroSlide({ slide }: HeroSlideProps) {
       </div>
     </div>
   )
-}
+})

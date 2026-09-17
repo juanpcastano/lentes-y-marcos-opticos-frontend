@@ -16,7 +16,9 @@ export function TopProductCard({ product }: { product: TopProduct }) {
         alt={product.name}
         containerClassName="aspect-[4/3] w-full"
         className="size-full object-cover"
+        skeletonClassName="animate-none"
         loading="lazy"
+        fetchPriority="low"
       />
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="text-sm font-semibold leading-tight line-clamp-2">

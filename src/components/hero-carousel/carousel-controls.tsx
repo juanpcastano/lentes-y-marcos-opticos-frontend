@@ -23,7 +23,7 @@ export function CarouselControls({
       <div className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <button
           onClick={onPrevious}
-          className="pointer-events-auto absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
+          className="pointer-events-auto absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60 md:flex md:p-3"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
@@ -31,20 +31,22 @@ export function CarouselControls({
 
         <button
           onClick={onNext}
-          className="pointer-events-auto absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60 md:flex md:p-3"
+          className="pointer-events-auto absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60 md:flex md:p-3"
           aria-label="Next slide"
         >
           <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
         </button>
       </div>
 
-      {/* Dot indicators — always visible */}
+      {/* Dot indicators — always visible. Solo transition-colors:
+          animar el ancho (layout) en cada paso del autoplay compite
+          con el transform del slide y produce micro-cortes. */}
       <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
         {Array.from({ length: total }).map((_, index) => (
           <button
             key={index}
             onClick={() => onSelect(index)}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-colors duration-200 ${
               index === activeIndex
                 ? "w-6 bg-white"
                 : "w-2 bg-white/50 hover:bg-white/75"
