@@ -9,16 +9,7 @@ import type { Address } from "#/services/addresses"
 import { AddressFormDialog } from "#/components/address-form"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent, CardHeader } from "#/components/ui/card"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "#/components/ui/alert-dialog"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import { toast } from "#/hooks/use-toast"
 
 export const Route = createFileRoute(
@@ -91,29 +82,15 @@ function RouteComponent() {
         address={editing}
       />
 
-      <AlertDialog
+      <PermanentDeleteDialog
         open={deletingId !== null}
         onOpenChange={(open) => !open && setDeletingId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar dirección</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro? Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Eliminando..." : "Sí, eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDelete}
+        title="Eliminar dirección"
+        description="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Sí, eliminar"
+      />
     </div>
   )
 }

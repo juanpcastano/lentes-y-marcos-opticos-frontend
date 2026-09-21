@@ -58,7 +58,6 @@ export const emptyInput: ProductFormInput = {
   material: "",
   shape: "",
   description: "",
-  taxRate: null,
   productType: "marco_optico",
   categories: [],
   variants: [],

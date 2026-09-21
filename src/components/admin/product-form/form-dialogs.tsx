@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "#/components/ui/alert-dialog"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card"
 import { AdminMediaDeleteDialog } from "#/components/admin/admin-media-delete-dialog"
 import type { ProductForm } from "./use-product-form"
@@ -111,67 +112,26 @@ export function DeleteVariantDialog({ form }: { form: ProductForm }) {
   const isLast = form.input.variants.length <= 1
 
   return (
-    <AlertDialog
+    <PermanentDeleteDialog
       open={open}
       onOpenChange={(next) => !next && form.closeDeleteVariant()}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar la variante “{color}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {variant?.id
-              ? "Al guardar, se eliminará del producto de forma permanente. Sus imágenes quedarán disponibles en la galería."
-              : "Se descartará del formulario. Aún no se ha guardado nada."}
-            {isLast &&
-              " Es la única variante del producto: tendrás que añadir otra antes de guardar."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={form.confirmDeleteVariant}
-          >
-            Eliminar
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      onConfirm={form.confirmDeleteVariant}
+      title={`¿Eliminar la variante “${color}”?`}
+      description={`${variant?.id ? "Al guardar, se eliminará del producto de forma permanente. Sus imágenes quedarán disponibles en la galería." : "Se descartará del formulario. Aún no se ha guardado nada."}${isLast ? " Es la única variante del producto: tendrás que añadir otra antes de guardar." : ""}`}
+    />
   )
 }
 
 /** Confirmación de eliminación permanente del producto. */
 export function DeleteProductDialog({ form }: { form: ProductForm }) {
   return (
-    <AlertDialog
+    <PermanentDeleteDialog
       open={form.deleteProductOpen}
       onOpenChange={form.closeDeleteProduct}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar el producto “{form.product?.name ?? ""}”?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará permanentemente del catálogo junto con sus variantes.
-            Esta acción no se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={form.deleteProductPending}>
-            Cancelar
-          </AlertDialogCancel>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={form.deleteProductPending}
-            onClick={form.confirmDeleteProduct}
-          >
-            {form.deleteProductPending ? "Eliminando..." : "Eliminar"}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      isPending={form.deleteProductPending}
+      onConfirm={form.confirmDeleteProduct}
+      title={`¿Eliminar el producto “${form.product?.name ?? ""}”?`}
+      description="Se eliminará permanentemente del catálogo junto con sus variantes. Esta acción no se puede deshacer."
+    />
   )
 }

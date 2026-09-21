@@ -6,6 +6,7 @@ import type { AdminProduct } from "#/services/admin"
 import type { AdminProductsSearch } from "#/components/admin/admin-products-search"
 import { useProductForm } from "./product-form/use-product-form"
 import { ProductInfoCard } from "./product-form/product-info-card"
+import { ReviewIssuesCard } from "./product-form/review-issues-card"
 import { VariantsSection } from "./product-form/variants-section"
 import {
   DangerZoneCard,
@@ -61,6 +62,8 @@ export function AdminProductForm({
           )}
         </div>
       </div>
+
+      {product && <ReviewIssuesCard product={product} />}
 
       <ProductInfoCard form={form} />
 

@@ -18,7 +18,11 @@ import {
   createAdminProductFacetsQueryOptions,
   createAdminProductsQueryOptions,
 } from "#/query-options/admin"
-import { adminErrorMessage, deleteAdminProduct } from "#/services/admin"
+import {
+  adminErrorMessage,
+  deleteAdminProduct,
+  bulkSetProductsStatus,
+} from "#/services/admin"
 
 export const Route = createFileRoute("/admin/products/")({
   validateSearch: adminProductsSearchSchema,
@@ -31,6 +35,7 @@ function ProductsPage() {
 
   const committedQuery = search.q ?? ""
   const activeFilter = search.active
+  const needsReviewFilter = search.needsReview
   const currentPage = search.page ?? 0
   const currentSort = search.sort
   const { data: categories = [] } = useQuery(
@@ -74,6 +79,7 @@ function ProductsPage() {
       onSale: search.onSale,
       isNew: search.isNew,
       active: activeFilter,
+      needsReview: needsReviewFilter,
       page: currentPage,
       sort: currentSort,
     }),
@@ -97,17 +103,30 @@ function ProductsPage() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
   })
+  const bulkStatusProducts = useMutation({
+    mutationFn: async ({
+      ids,
+      isActive,
+    }: {
+      ids: string[]
+      isActive: boolean
+    }) => bulkSetProductsStatus(ids, isActive),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
+  })
 
   const handleFiltersChange = (filters: AdminProductsFilters) => {
     setInput(filters.q)
     const activeChanged = filters.active !== activeFilter
+    const reviewChanged = filters.needsReview !== needsReviewFilter
     const searchCleared = filters.q === "" && committedQuery !== ""
-    if (!activeChanged && !searchCleared) return
+    if (!activeChanged && !reviewChanged && !searchCleared) return
     navigate({
       search: (prev) => ({
         ...prev,
         q: filters.q || undefined,
         active: filters.active,
+        needsReview: filters.needsReview,
         page: undefined,
       }),
       resetScroll: false,
@@ -150,6 +169,7 @@ function ProductsPage() {
         return {
           ...next,
           active: hasAdvancedFilters ? next.active : undefined,
+          needsReview: hasAdvancedFilters ? next.needsReview : undefined,
         }
       },
       resetScroll: false,
@@ -186,11 +206,20 @@ function ProductsPage() {
           {adminErrorMessage(removeProducts.error)}
         </p>
       )}
+      {bulkStatusProducts.error && (
+        <p className="mt-6 text-sm text-destructive">
+          {adminErrorMessage(bulkStatusProducts.error)}
+        </p>
+      )}
       <AdminProductsTable
         data={data}
         isPending={isPending}
         isPlaceholderData={isPlaceholderData}
-        filters={{ q: input, active: activeFilter }}
+        filters={{
+          q: input,
+          active: activeFilter,
+          needsReview: needsReviewFilter,
+        }}
         onFiltersChange={handleFiltersChange}
         sort={currentSort}
         onSortChange={handleSortChange}
@@ -198,6 +227,10 @@ function ProductsPage() {
         onPageChange={handlePageChange}
         onDelete={(ids) => removeProducts.mutate(ids)}
         isDeleting={removeProducts.isPending}
+        onBulkStatus={(ids, isActive) =>
+          bulkStatusProducts.mutate({ ids, isActive })
+        }
+        isUpdatingStatus={bulkStatusProducts.isPending}
         returnSearch={search}
         filtersContent={
           <ProductFilterFields

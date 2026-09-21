@@ -2,16 +2,7 @@ import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Pencil, Plus, Trash2 } from "lucide-react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "#/components/ui/alert-dialog"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import {
   Dialog,
   DialogContent,
@@ -389,49 +380,30 @@ export function AdminTaxonomyPage({ mode }: { mode: Mode }) {
           {adminErrorMessage(error)}
         </p>
       )}
-      <AlertDialog
+      <PermanentDeleteDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
+        isPending={remove.isPending}
+        confirmDisabled={!deleting}
+        onConfirm={() => deleting && remove.mutate(deleting.id)}
+        title={`¿Eliminar ${isBrands ? "la marca" : "la categoría"} “${deleting?.name}”?`}
+        description="Esta acción no se puede deshacer. Si tiene productos asociados, la eliminación será rechazada y deberás reasignarlos primero."
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              ¿Eliminar {isBrands ? "la marca" : "la categoría"} “
-              {deleting?.name}”?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Si tiene productos asociados, la
-              eliminación será rechazada y deberás reasignarlos primero.
-            </AlertDialogDescription>
-            {deleting && (
-              <Link
-                to="/admin/products"
-                search={
-                  isBrands
-                    ? { brands: [deleting.name] }
-                    : { categories: [deleting.name] }
-                }
-                className="text-sm font-medium text-primary underline underline-offset-4"
-                onClick={() => setDeleting(null)}
-              >
-                Ver productos asociados
-              </Link>
-            )}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={remove.isPending || !deleting}
-              onClick={() => deleting && remove.mutate(deleting.id)}
-            >
-              {remove.isPending ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {deleting && (
+          <Link
+            to="/admin/products"
+            search={
+              isBrands
+                ? { brands: [deleting.name] }
+                : { categories: [deleting.name] }
+            }
+            className="text-sm font-medium text-primary underline underline-offset-4"
+            onClick={() => setDeleting(null)}
+          >
+            Ver productos asociados
+          </Link>
+        )}
+      </PermanentDeleteDialog>
     </div>
   )
 }

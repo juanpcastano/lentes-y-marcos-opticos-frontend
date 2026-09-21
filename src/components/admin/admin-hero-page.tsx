@@ -9,16 +9,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "#/components/ui/alert-dialog"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import {
   Dialog,
   DialogContent,
@@ -481,34 +472,15 @@ export function AdminHeroPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <PermanentDeleteDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              ¿Eliminar el slide “{deleting?.title}”?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. El slide dejará de mostrarse en
-              la página principal.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={remove.isPending || !deleting}
-              onClick={() => deleting && remove.mutate(deleting.id)}
-            >
-              {remove.isPending ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        isPending={remove.isPending}
+        confirmDisabled={!deleting}
+        onConfirm={() => deleting && remove.mutate(deleting.id)}
+        title={`¿Eliminar el slide “${deleting?.title}”?`}
+        description="Esta acción no se puede deshacer. El slide dejará de mostrarse en la página principal."
+      />
     </div>
   )
 }

@@ -12,6 +12,7 @@ export const adminProductsSearchSchema = z.object({
   onSale: z.boolean().optional(),
   isNew: z.boolean().optional(),
   active: z.enum(["true", "false"]).optional().catch(undefined),
+  needsReview: z.enum(["true"]).optional().catch(undefined),
   page: z.coerce.number().int().min(0).catch(0).optional(),
   sort: z
     .enum([

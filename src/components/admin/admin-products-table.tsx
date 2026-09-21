@@ -3,6 +3,8 @@ import type { ReactNode } from "react"
 import {
   Check,
   ChevronDown,
+  Eye,
+  EyeOff,
   LoaderCircle,
   MoreHorizontal,
   Search,
@@ -16,6 +18,7 @@ import type {
   LegacyReactTable,
 } from "@tanstack/react-table/legacy"
 import { Link } from "@tanstack/react-router"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,10 +72,12 @@ import {
 } from "#/components/ui/table"
 import type { AdminProduct, PageResponse } from "#/services/admin"
 import type { AdminProductsSearch } from "#/components/admin/admin-products-search"
+import { productReviewIssues } from "#/components/admin/product-review"
 
 export interface AdminProductsFilters {
   q: string
   active: "true" | "false" | undefined
+  needsReview: "true" | undefined
 }
 
 export interface AdminProductsSort {
@@ -94,6 +99,8 @@ interface AdminProductsTableProps {
   onPageChange: (page: number) => void
   onDelete: (ids: string[]) => void
   isDeleting: boolean
+  onBulkStatus: (ids: string[], isActive: boolean) => void
+  isUpdatingStatus: boolean
   returnSearch: AdminProductsSearch
   filtersContent: ReactNode
 }
@@ -199,6 +206,24 @@ function VariantPriceCell({ product }: { product: AdminProduct }) {
   )
 }
 
+/** Motivos por los que un producto ya en tienda necesita revisión. */
+function reviewReasons(product: AdminProduct): string[] {
+  return productReviewIssues(product).map((issue) => issue.text)
+}
+
+function ReviewBadge({ product }: { product: AdminProduct }) {
+  const reasons = reviewReasons(product)
+  if (reasons.length === 0) return null
+  return (
+    <span
+      title={`Necesita revisión: ${reasons.join(", ")}.`}
+      className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+    >
+      Revisar
+    </span>
+  )
+}
+
 function getPageItems(
   page: number,
   totalPages: number,
@@ -280,6 +305,8 @@ export function AdminProductsTable({
   onPageChange,
   onDelete,
   isDeleting,
+  onBulkStatus,
+  isUpdatingStatus,
   returnSearch,
   filtersContent,
 }: AdminProductsTableProps) {
@@ -290,13 +317,22 @@ export function AdminProductsTable({
     LegacyReactTable<AdminProduct>["state"]["rowSelection"]
   >({})
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
+  const [pendingStatus, setPendingStatus] = useState<{
+    ids: string[]
+    isActive: boolean
+  } | null>(null)
 
   function requestDelete(ids: string[]) {
     if (ids.length === 0 || isDeleting) return
     setPendingDelete(ids)
   }
 
-  const { q, active } = filters
+  function requestStatus(ids: string[], isActive: boolean) {
+    if (ids.length === 0 || isUpdatingStatus) return
+    setPendingStatus({ ids, isActive })
+  }
+
+  const { q, active, needsReview } = filters
   const sorting: LegacyReactTable<AdminProduct>["state"]["sorting"] = sort
     ? [
         {
@@ -308,7 +344,7 @@ export function AdminProductsTable({
 
   useEffect(() => {
     setRowSelection((current) => (Object.keys(current).length ? {} : current))
-  }, [q, active, page])
+  }, [q, active, needsReview, page])
 
   const columns = useMemo<LegacyColumnDef<AdminProduct>[]>(
     () => [
@@ -343,17 +379,20 @@ export function AdminProductsTable({
         ),
         cell: ({ row }) => (
           <div>
-            <Link
-              className="font-medium hover:text-primary"
-              to="/admin/products/$id"
-              params={{ id: row.original.id }}
-              search={returnSearch}
-              title={row.original.name}
-            >
-              {row.original.name.length > 30
-                ? `${row.original.name.slice(0, 30)}…`
-                : row.original.name}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                className="font-medium hover:text-primary"
+                to="/admin/products/$id"
+                params={{ id: row.original.id }}
+                search={returnSearch}
+                title={row.original.name}
+              >
+                {row.original.name.length > 30
+                  ? `${row.original.name.slice(0, 30)}…`
+                  : row.original.name}
+              </Link>
+              <ReviewBadge product={row.original} />
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {row.original.categories.join(" · ") || "Sin categoría"}
             </p>
@@ -395,43 +434,61 @@ export function AdminProductsTable({
         id: "actions",
         enableSorting: false,
         enableHiding: false,
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="size-8 p-0"
-                variant="ghost"
-                aria-label={`Acciones para ${row.original.name}`}
-              >
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/admin/products/$id"
-                  params={{ id: row.original.id }}
-                  search={returnSearch}
+        cell: ({ row }) => {
+          const hasActiveVariant = row.original.variants.some(
+            (variant) => variant.isActive,
+          )
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="size-8 p-0"
+                  variant="ghost"
+                  aria-label={`Acciones para ${row.original.name}`}
                 >
-                  Editar producto
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                disabled={isDeleting}
-                onClick={() => requestDelete([row.original.id])}
-              >
-                {isDeleting && <LoaderCircle className="animate-spin" />}
-                Eliminar producto
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/admin/products/$id"
+                    params={{ id: row.original.id }}
+                    search={returnSearch}
+                  >
+                    Editar producto
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={isUpdatingStatus}
+                  onClick={() =>
+                    requestStatus([row.original.id], !hasActiveVariant)
+                  }
+                >
+                  {isUpdatingStatus && (
+                    <LoaderCircle className="animate-spin" />
+                  )}
+                  {hasActiveVariant
+                    ? "Desactivar producto"
+                    : "Activar producto"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  disabled={isDeleting}
+                  onClick={() => requestDelete([row.original.id])}
+                >
+                  {isDeleting && <LoaderCircle className="animate-spin" />}
+                  Eliminar producto
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
       },
     ],
-    [isDeleting],
+    [isDeleting, isUpdatingStatus],
   )
 
   const rows = data?.content ?? []
@@ -461,11 +518,17 @@ export function AdminProductsTable({
   const pageSize = data?.size ?? 20
   const firstVisible = totalElements === 0 ? 0 : page * pageSize + 1
   const lastVisible = page * pageSize + rows.length
-  const hasActiveFilters = q.trim() !== "" || active !== undefined
+  const hasActiveFilters =
+    q.trim() !== "" || active !== undefined || needsReview !== undefined
   const pendingDeleteNames = (pendingDelete ?? [])
     .map((id) => rows.find((row) => row.id === id)?.name)
     .filter((name): name is string => Boolean(name))
   const pendingDeleteCount = pendingDelete?.length ?? 0
+  const pendingStatusIds = pendingStatus?.ids ?? []
+  const pendingStatusActive = pendingStatus?.isActive ?? false
+  const pendingStatusNames = pendingStatusIds
+    .map((id) => rows.find((row) => row.id === id)?.name)
+    .filter((name): name is string => Boolean(name))
 
   return (
     <div className="mt-6 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5">
@@ -509,11 +572,69 @@ export function AdminProductsTable({
             <SelectItem value="false">Ocultos</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={needsReview ?? "all"}
+          onValueChange={(value) => {
+            onFiltersChange({
+              ...filters,
+              needsReview: value === "true" ? "true" : undefined,
+            })
+          }}
+        >
+          <SelectTrigger
+            className="w-full sm:w-44"
+            aria-label="Filtrar por revisión"
+          >
+            <SelectValue placeholder="Revisión" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="true">Por revisar</SelectItem>
+          </SelectContent>
+        </Select>
         {selectedRows.length > 0 && (
           <div className="flex gap-2">
             <Button
+              variant="outline"
+              disabled={isUpdatingStatus || isDeleting}
+              onClick={() =>
+                requestStatus(
+                  selectedRows.map((row) => row.original.id),
+                  false,
+                )
+              }
+            >
+              {isUpdatingStatus ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <EyeOff />
+              )}
+              {isUpdatingStatus
+                ? "Desactivando..."
+                : `Desactivar (${selectedRows.length})`}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={isUpdatingStatus || isDeleting}
+              onClick={() =>
+                requestStatus(
+                  selectedRows.map((row) => row.original.id),
+                  true,
+                )
+              }
+            >
+              {isUpdatingStatus ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <Eye />
+              )}
+              {isUpdatingStatus
+                ? "Activando..."
+                : `Activar (${selectedRows.length})`}
+            </Button>
+            <Button
               variant="destructive"
-              disabled={isDeleting}
+              disabled={isDeleting || isUpdatingStatus}
               onClick={() =>
                 requestDelete(selectedRows.map((row) => row.original.id))
               }
@@ -620,7 +741,11 @@ export function AdminProductsTable({
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          onFiltersChange({ q: "", active: undefined })
+                          onFiltersChange({
+                            q: "",
+                            active: undefined,
+                            needsReview: undefined,
+                          })
                         }
                       >
                         Limpiar filtros
@@ -703,47 +828,74 @@ export function AdminProductsTable({
           </Pagination>
         )}
       </div>
-      <AlertDialog
+      <PermanentDeleteDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
+        isPending={isDeleting}
+        confirmDisabled={!pendingDelete}
+        onConfirm={() => {
+          if (!pendingDelete) return
+          onDelete(pendingDelete)
+          setRowSelection({})
+          setPendingDelete(null)
+        }}
+        title={
+          pendingDeleteCount > 1
+            ? `¿Eliminar ${pendingDeleteCount} productos?`
+            : `¿Eliminar el producto “${pendingDeleteNames[0] ?? ""}”?`
+        }
+        description={`Los productos se eliminarán permanentemente del catálogo junto con sus variantes. Sus imágenes quedarán disponibles en la galería. Esta acción no se puede deshacer.${pendingDeleteNames.length > 1 ? ` Productos: ${pendingDeleteNames.slice(0, 3).join(", ")}${pendingDeleteNames.length > 3 ? ` y ${pendingDeleteNames.length - 3} más` : ""}.` : ""}`}
+      />
+      <AlertDialog
+        open={pendingStatus !== null}
+        onOpenChange={(open) => !open && setPendingStatus(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingDeleteCount > 1
-                ? `¿Eliminar ${pendingDeleteCount} productos?`
-                : `¿Eliminar el producto “${pendingDeleteNames[0] ?? ""}”?`}
+              {pendingStatusIds.length > 1
+                ? pendingStatusActive
+                  ? `¿Activar ${pendingStatusIds.length} productos?`
+                  : `¿Desactivar ${pendingStatusIds.length} productos?`
+                : pendingStatusActive
+                  ? `¿Activar el producto “${pendingStatusNames[0] ?? ""}”?`
+                  : `¿Desactivar el producto “${pendingStatusNames[0] ?? ""}”?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Los productos se eliminarán permanentemente del catálogo junto con
-              sus variantes. Sus imágenes quedarán disponibles en la galería.
-              Esta acción no se puede deshacer.
-              {pendingDeleteNames.length > 1 && (
+              {pendingStatusActive
+                ? "Se activarán todas las variantes de los productos seleccionados y volverán a ser visibles en la tienda."
+                : "Se desactivarán todas las variantes de los productos seleccionados y dejarán de ser visibles en la tienda. Los productos no se eliminarán."}
+              {pendingStatusNames.length > 1 && (
                 <>
                   {" "}
-                  Productos: {pendingDeleteNames.slice(0, 3).join(", ")}
-                  {pendingDeleteNames.length > 3 &&
-                    ` y ${pendingDeleteNames.length - 3} más`}
+                  Productos: {pendingStatusNames.slice(0, 3).join(", ")}
+                  {pendingStatusNames.length > 3 &&
+                    ` y ${pendingStatusNames.length - 3} más`}
                   .
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
+            <AlertDialogCancel disabled={isUpdatingStatus}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting || !pendingDelete}
+              disabled={isUpdatingStatus || !pendingStatus}
               onClick={() => {
-                if (!pendingDelete) return
-                onDelete(pendingDelete)
+                if (!pendingStatus) return
+                onBulkStatus(pendingStatus.ids, pendingStatus.isActive)
                 setRowSelection({})
-                setPendingDelete(null)
+                setPendingStatus(null)
               }}
             >
-              {isDeleting ? "Eliminando..." : "Eliminar"}
+              {isUpdatingStatus
+                ? pendingStatusActive
+                  ? "Activando..."
+                  : "Desactivando..."
+                : pendingStatusActive
+                  ? "Activar"
+                  : "Desactivar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

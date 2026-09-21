@@ -1,14 +1,5 @@
 import { AlertTriangle, ImageIcon } from "lucide-react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "#/components/ui/alert-dialog"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import type { AdminMediaAsset } from "#/services/admin"
 
 export function AdminMediaDeleteDialog({
@@ -25,38 +16,29 @@ export function AdminMediaDeleteDialog({
   onConfirm: () => void
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            {asset?.references.length ? (
-              <AlertTriangle className="text-destructive" />
-            ) : (
-              <ImageIcon />
-            )}
-            ¿Eliminar esta imagen?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {asset?.references.length
-              ? `Está siendo usada por ${formatReferenceNames(asset)}. Se quitarán todas esas referencias y, si era principal, se elegirá otra imagen del producto.`
-              : "El objeto se eliminará permanentemente del bucket y no se podrá recuperar desde el panel."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isPending || !asset}
-            onClick={(event) => {
-              event.preventDefault()
-              onConfirm()
-            }}
-          >
-            {isPending ? "Eliminando..." : "Eliminar definitivamente"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <PermanentDeleteDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      isPending={isPending}
+      confirmDisabled={!asset}
+      confirmLabel="Eliminar definitivamente"
+      onConfirm={onConfirm}
+      title={
+        <span className="flex items-center gap-2">
+          {asset?.references.length ? (
+            <AlertTriangle className="text-destructive" />
+          ) : (
+            <ImageIcon />
+          )}
+          ¿Eliminar esta imagen?
+        </span>
+      }
+      description={
+        asset?.references.length
+          ? `Está siendo usada por ${formatReferenceNames(asset)}. Se quitarán todas esas referencias y, si era principal, se elegirá otra imagen del producto.`
+          : "El objeto se eliminará permanentemente del bucket y no se podrá recuperar desde el panel."
+      }
+    />
   )
 }
 

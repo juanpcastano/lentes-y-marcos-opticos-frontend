@@ -6,7 +6,7 @@ import { ME_QUERY_KEY } from "#/query-options/auth"
 import { logout } from "#/services/auth"
 import { Button } from "#/components/ui/button"
 import { Card, CardContent } from "#/components/ui/card"
-import { FieldDescription } from "#/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "#/components/ui/field"
 import {
   Dialog,
   DialogClose,
@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "#/components/ui/dialog"
+import { Input } from "#/components/ui/input"
+import { PERMANENT_DELETE_PHRASE } from "#/components/permanent-delete-dialog"
 
 function formatDeletionDate(): string {
   const date = new Date()
@@ -32,8 +34,12 @@ export function DeleteAccount() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [confirmation, setConfirmation] = useState("")
+
+  const confirmed = confirmation.trim() === PERMANENT_DELETE_PHRASE
 
   const handleConfirm = async () => {
+    if (!confirmed) return
     await logout()
     await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
     navigate({ to: "/" })
@@ -50,7 +56,13 @@ export function DeleteAccount() {
           La eliminación de tu cuenta es permanente. Una vez confirmes, tu
           cuenta será programada para eliminación.
         </FieldDescription>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next)
+            if (next) setConfirmation("")
+          }}
+        >
           <DialogTrigger asChild>
             <Button variant="destructive" className="mt-4">
               Eliminar cuenta
@@ -65,11 +77,31 @@ export function DeleteAccount() {
                 puedes cancelar la eliminación iniciando sesión.
               </DialogDescription>
             </DialogHeader>
+            <Field>
+              <FieldLabel htmlFor="delete-account-confirmation">
+                Escribe{" "}
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                  {PERMANENT_DELETE_PHRASE}
+                </code>{" "}
+                para continuar
+              </FieldLabel>
+              <Input
+                id="delete-account-confirmation"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                placeholder={PERMANENT_DELETE_PHRASE}
+                autoComplete="off"
+              />
+            </Field>
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline">Cancelar</Button>
               </DialogClose>
-              <Button variant="destructive" onClick={handleConfirm}>
+              <Button
+                variant="destructive"
+                disabled={!confirmed}
+                onClick={handleConfirm}
+              >
                 Sí, eliminar
               </Button>
             </DialogFooter>

@@ -192,7 +192,6 @@ export function useProductForm(
         material: product.material ?? "",
         shape: product.shape ?? "",
         description: product.description ?? "",
-        taxRate: product.taxRate,
         productType: product.productType,
         categories: product.categories,
         variants: product.variants.map((variant) => ({

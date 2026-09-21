@@ -27,7 +27,6 @@ export interface AdminProduct {
   material: string | null
   shape: string | null
   description: string | null
-  taxRate: number | null
   productType: string
   categories: string[]
   variants: AdminVariant[]
@@ -49,7 +48,6 @@ export interface AdminProductInput {
   material: string
   shape: string
   description: string
-  taxRate: number | null
   productType: string
   categories: string[]
   variants: AdminVariantInput[]
@@ -155,6 +153,7 @@ export async function listAdminProducts(params?: {
   onSale?: boolean
   isNew?: boolean
   active?: string
+  needsReview?: string
   colors?: string[]
   page?: number
   sort?: string
@@ -175,6 +174,7 @@ export async function listAdminProducts(params?: {
   if (params?.onSale) query.set("onSale", "true")
   if (params?.isNew) query.set("isNew", "true")
   if (params?.active) query.set("active", params.active)
+  if (params?.needsReview) query.set("needsReview", params.needsReview)
   if (params?.sort) query.set("sort", params.sort)
   query.set("page", String(params?.page ?? 0))
   query.set("size", "100")
@@ -199,6 +199,19 @@ export function updateAdminProduct(id: string, input: AdminProductInput) {
 
 export function deleteAdminProduct(id: string) {
   return api.delete<void>(`/admin/products/${id}`)
+}
+
+export interface BulkProductStatusResult {
+  updatedProducts: number
+  updatedVariants: number
+  isActive: boolean
+}
+
+export function bulkSetProductsStatus(ids: string[], isActive: boolean) {
+  return api.put<BulkProductStatusResult>("/admin/products/bulk-status", {
+    ids,
+    isActive,
+  })
 }
 
 export function uploadVariantImage(
@@ -340,6 +353,7 @@ export interface InventoryExistingSnapshot {
   brand: string | null
   categories: string[]
   productType: string | null
+  productId: string | null
 }
 
 export interface InventoryPreviewRow {
@@ -356,6 +370,10 @@ export interface InventoryPreviewRow {
   detail: string | null
   existing: InventoryExistingSnapshot | null
   suggestedAction: InventorySuggestedAction
+  productName: string | null
+  color: string | null
+  needsColorReview: boolean
+  groupKey: string | null
 }
 
 export interface InventoryPreviewSummary {
@@ -367,9 +385,37 @@ export interface InventoryPreviewSummary {
   errores: number
 }
 
+export interface InventoryBrandCandidate {
+  rawName: string
+  count: number
+  suggestedBrandId: string | null
+  suggestedBrandName: string | null
+}
+
+export interface InventoryCategoryCandidate {
+  rawName: string
+  count: number
+  suggestedCategoryId: string | null
+  suggestedCategoryName: string | null
+}
+
+export interface InventoryExistingBrand {
+  id: string
+  name: string
+}
+
+export interface InventoryExistingCategory {
+  id: string
+  name: string
+}
+
 export interface InventoryPreview {
   rows: InventoryPreviewRow[]
   summary: InventoryPreviewSummary
+  brands: InventoryBrandCandidate[]
+  categories: InventoryCategoryCandidate[]
+  existingBrands: InventoryExistingBrand[]
+  existingCategories: InventoryExistingCategory[]
 }
 
 export interface InventoryConfirmResult {
@@ -383,10 +429,12 @@ export interface InventoryConfirmResult {
 export function previewInventory(
   file: File,
   onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
 ) {
   const body = new FormData()
   body.append("file", file)
   return api.post<InventoryPreview>("/admin/inventory/preview", body, {
+    signal,
     onUploadProgress: (event) => {
       if (event.total)
         onProgress?.(Math.round((event.loaded / event.total) * 100))
@@ -411,6 +459,50 @@ export function confirmInventory(
         onProgress?.(Math.round((event.loaded / event.total) * 100))
     },
   })
+}
+
+export type ImportPlanBrandAction = "MAP" | "CREATE" | "OMIT"
+export type ImportPlanCategoryAction = "MAP" | "CREATE" | "OMIT"
+export type ImportPlanVariantMode = "CREATE" | "UPDATE" | "REPLACE" | "DISCARD"
+
+export interface ImportPlanBrand {
+  rawName: string
+  action: ImportPlanBrandAction
+  brandId: string | null
+  finalName: string | null
+}
+
+export interface ImportPlanCategory {
+  rawName: string
+  action: ImportPlanCategoryAction
+  categoryId: string | null
+  finalName: string | null
+}
+
+export interface ImportPlanVariant {
+  sku: string
+  color: string
+  price: number
+  mode: ImportPlanVariantMode
+}
+
+export interface ImportPlanProduct {
+  existingProductId: string | null
+  name: string
+  brandRaw: string
+  categoryRaws: string[]
+  productType: string | null
+  variants: ImportPlanVariant[]
+}
+
+export interface ImportPlanRequest {
+  brands: ImportPlanBrand[]
+  categories: ImportPlanCategory[]
+  products: ImportPlanProduct[]
+}
+
+export function confirmImportPlan(plan: ImportPlanRequest) {
+  return api.post<InventoryConfirmResult>("/admin/inventory/confirm-plan", plan)
 }
 
 /**

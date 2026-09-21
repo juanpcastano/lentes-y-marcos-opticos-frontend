@@ -25,6 +25,7 @@ export function createAdminProductsQueryOptions(params?: {
   onSale?: boolean
   isNew?: boolean
   active?: string
+  needsReview?: string
   page?: number
   sort?: string
 }) {

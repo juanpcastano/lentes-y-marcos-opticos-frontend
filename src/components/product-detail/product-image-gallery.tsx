@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { ImageOff } from "lucide-react"
 import {
   Carousel,
   CarouselContent,
@@ -52,11 +53,13 @@ export function ProductImageGallery({
   additionalImages,
   name,
 }: {
-  imageUrl: string
-  additionalImages: string[]
+  imageUrl: string | null | undefined
+  additionalImages: (string | null | undefined)[]
   name: string
 }) {
-  const images = [imageUrl, ...additionalImages]
+  const images = [imageUrl, ...additionalImages].filter(
+    (src): src is string => typeof src === "string" && src.trim().length > 0,
+  )
   const [activeIndex, setActiveIndex] = useState(0)
   const [api, setApi] = useState<CarouselApi>()
   const [canScroll, setCanScroll] = useState(false)
@@ -71,6 +74,10 @@ export function ProductImageGallery({
   )
 
   useEffect(() => {
+    setActiveIndex(0)
+  }, [imageUrl, additionalImages])
+
+  useEffect(() => {
     if (!api) return
     function update() {
       setCanScroll((api?.scrollSnapList().length ?? 0) > 1)
@@ -82,9 +89,20 @@ export function ProductImageGallery({
     }
   }, [api])
 
+  if (images.length === 0) {
+    return (
+      <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-muted text-muted-foreground">
+        <ImageOff className="size-10" aria-hidden />
+        <p className="text-sm">Sin imagen disponible</p>
+      </div>
+    )
+  }
+
+  const safeIndex = Math.min(activeIndex, images.length - 1)
+
   return (
     <div className="flex flex-col gap-4">
-      <ZoomImage src={images[activeIndex]} alt={name} />
+      <ZoomImage src={images[safeIndex]} alt={name} />
       <Carousel opts={opts} setApi={setApi} className="w-full">
         <CarouselContent>
           {images.map((img, i) => (
@@ -93,10 +111,10 @@ export function ProductImageGallery({
                 type="button"
                 onClick={() => setActiveIndex(i)}
                 aria-label={`Ver imagen ${i + 1} de ${name}`}
-                aria-pressed={i === activeIndex}
+                aria-pressed={i === safeIndex}
                 className={cn(
                   "relative aspect-square w-full overflow-hidden rounded-md border-2 bg-muted transition-colors",
-                  i === activeIndex
+                  i === safeIndex
                     ? "border-primary"
                     : "border-transparent hover:border-muted-foreground/40",
                 )}

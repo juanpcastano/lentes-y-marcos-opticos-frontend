@@ -13,7 +13,7 @@ import { Textarea } from "#/components/ui/textarea"
 import { PRODUCT_TYPES } from "./types"
 import type { ProductForm } from "./use-product-form"
 
-/** Tarjeta "Información principal": nombre, marca, tipo, material, IVA, etc. */
+/** Tarjeta "Información principal": nombre, marca, tipo, material, etc. */
 export function ProductInfoCard({ form }: { form: ProductForm }) {
   const { input, brands, categories, updateField } = form
   return (
@@ -84,20 +84,6 @@ export function ProductInfoCard({ form }: { form: ProductForm }) {
             id="product-shape"
             value={input.shape}
             onChange={(e) => updateField("shape", e.target.value)}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="product-tax-rate">IVA (%)</FieldLabel>
-          <Input
-            id="product-tax-rate"
-            type="number"
-            value={input.taxRate ?? ""}
-            onChange={(e) =>
-              updateField(
-                "taxRate",
-                e.target.value === "" ? null : Number(e.target.value),
-              )
-            }
           />
         </Field>
         <Field className="sm:col-span-2">

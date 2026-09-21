@@ -34,6 +34,10 @@ import { useAuth } from "#/components/auth-provider"
 
 type SelectableVariant = ProductVariant & { id: string }
 
+function hasText(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0
+}
+
 export const Route = createFileRoute("/_main-layout/product/$id")({
   validateSearch: (search: Record<string, unknown>) => ({
     variant: typeof search.variant === "string" ? search.variant : undefined,
@@ -206,6 +210,14 @@ function ProductDetailPage() {
     )
   }
 
+  const showBrand = hasText(product.brand)
+  const showDescription = hasText(product.description)
+  const showMaterial = hasText(product.material)
+  const showShape = hasText(product.shape)
+  const showSpecs = showMaterial || showShape
+  const showCategories = product.categories.length > 0
+  const showSheetImage = hasText(product.imageUrl)
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Link
@@ -223,9 +235,11 @@ function ProductDetailPage() {
         />
 
         <div className="flex flex-col gap-5">
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">
-            {product.brand}
-          </span>
+          {showBrand && (
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              {product.brand}
+            </span>
+          )}
           <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
             {product.name}
           </h1>
@@ -241,20 +255,28 @@ function ProductDetailPage() {
             discountPercentage={product.discountPercentage}
           />
 
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {product.description}
-          </p>
+          {showDescription && (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {product.description}
+            </p>
+          )}
 
-          <dl className="grid grid-cols-2 gap-3 border-t pt-4 text-sm">
-            <div>
-              <dt className="font-medium">Material</dt>
-              <dd className="text-muted-foreground">{product.material}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">Forma</dt>
-              <dd className="text-muted-foreground">{product.shape}</dd>
-            </div>
-          </dl>
+          {showSpecs && (
+            <dl className="grid grid-cols-2 gap-3 border-t pt-4 text-sm">
+              {showMaterial && (
+                <div>
+                  <dt className="font-medium">Material</dt>
+                  <dd className="text-muted-foreground">{product.material}</dd>
+                </div>
+              )}
+              {showShape && (
+                <div>
+                  <dt className="font-medium">Forma</dt>
+                  <dd className="text-muted-foreground">{product.shape}</dd>
+                </div>
+              )}
+            </dl>
+          )}
 
           {availableVariants.length > 0 && (
             <div className="grid gap-2 text-sm font-medium">
@@ -278,16 +300,18 @@ function ProductDetailPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            {product.categories.map((category) => (
-              <span
-                key={category}
-                className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
-              >
-                {category}
-              </span>
-            ))}
-          </div>
+          {showCategories && (
+            <div className="flex flex-wrap gap-2">
+              {product.categories.map((category) => (
+                <span
+                  key={category}
+                  className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+                >
+                  {category}
+                </span>
+              ))}
+            </div>
+          )}
 
           <Button
             size="lg"
@@ -333,11 +357,17 @@ function ProductDetailPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="flex gap-4 px-6">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="size-20 rounded-xl object-cover"
-            />
+            {showSheetImage ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="size-20 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="flex size-20 items-center justify-center rounded-xl bg-muted text-xs text-muted-foreground">
+                Sin imagen
+              </div>
+            )}
             <div className="grid gap-1">
               <p className="font-medium">{product.name}</p>
               {selectedVariant && (
