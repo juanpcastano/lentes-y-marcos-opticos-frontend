@@ -687,27 +687,16 @@ export function validatePreviewBlocking(rows: InventoryPreviewRow[]): string[] {
     )
   }
 
-  // Sin precio en el Excel (Cant=0 o no numérico): el wizard no edita
-  // precios, así que no hay cómo importarlo.
+  // Sin precio en el Excel (Cant=0, total en 0 o no numérico): el wizard no
+  // edita precios, así que no hay cómo importarlo.
   for (const row of usable) {
-    if (row.basePrice != null) continue
+    if (row.basePrice != null && row.basePrice > 0) continue
     issues.push(
       `${where(row)}: «${detectedName(row)}» (marca ${brandOf(row)}) no trae precio en el Excel. Corrige el Excel y vuelve a subirlo.`,
     )
   }
 
-  // Repetido idéntico entre sedes: el mismo SKU dos veces es un error del
-  // archivo aunque los datos coincidan (se importa una sola vez y la copia
-  // sobra).
-  for (const row of usable) {
-    if (row.detail && row.detail.includes("se importa una vez")) {
-      issues.push(
-        `${where(row)}: el SKU ${row.sku} está repetido en el archivo (${row.detail.charAt(0).toLowerCase()}${row.detail.slice(1)}). Corrige el Excel y vuelve a subirlo.`,
-      )
-    }
-  }
-
-  return issues.slice(0, 10)
+  return issues
 }
 
 /**
@@ -793,5 +782,5 @@ export function validatePreviewWarnings(rows: InventoryPreviewRow[]): string[] {
     )
   }
 
-  return warnings.slice(0, 15)
+  return warnings
 }

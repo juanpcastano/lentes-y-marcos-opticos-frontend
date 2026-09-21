@@ -554,11 +554,41 @@ describe("import wizard", () => {
     expect(blockers[0]).toContain("no trae precio")
   })
 
-  it("bloquea el SKU repetido idéntico entre sedes", () => {
+  it("bloquea precio en cero aunque venga como número", () => {
+    const rows = [
+      {
+        rowKey: "SKU:P0",
+        sheet: "SEDE 1",
+        rowNumber: 5,
+        sku: "P0",
+        name: "Producto Gratis NEGRO",
+        brand: "X",
+        categories: ["Hombre"],
+        productType: "marco_optico",
+        basePrice: 0,
+        status: "NUEVO",
+        detail: null,
+        existing: null,
+        suggestedAction: "CREATE",
+        productName: "Producto Gratis",
+        color: "Negro",
+        needsColorReview: false,
+        groupKey: "B:X|P:Q",
+      },
+    ] as unknown as PreviewRows
+    const blockers = validatePreviewBlocking(rows)
+    expect(blockers).toHaveLength(1)
+    expect(blockers[0]).toContain("no trae precio")
+  })
+
+  it("el SKU repetido idéntico entre sedes pasa en silencio", () => {
+    // Softix lleva un inventario por sede: el mismo SKU con los mismos
+    // datos es el mismo producto en varias ubicaciones, se fusiona sin
+    // bloqueos ni avisos. Solo difirir en datos es error.
     const rows = [
       {
         rowKey: "SKU:R1",
-        sheet: "SEDE 1",
+        sheet: "SEDE 1, SEDE 2",
         rowNumber: 6,
         sku: "R1",
         name: "Producto Repetido ROJO",
@@ -567,20 +597,17 @@ describe("import wizard", () => {
         productType: "marco_optico",
         basePrice: 107000,
         status: "SIN_CAMBIOS",
-        detail:
-          "Repetido en SEDE 1, SEDE 2 con los mismos datos: se importa una vez",
+        detail: null,
         existing: null,
-        suggestedAction: "CREATE",
+        suggestedAction: "NONE",
         productName: "Producto Repetido",
         color: "Rojo",
         needsColorReview: false,
         groupKey: "B:X|P:R",
       },
     ] as unknown as PreviewRows
-    const blockers = validatePreviewBlocking(rows)
-    expect(blockers).toHaveLength(1)
-    expect(blockers[0]).toContain("R1")
-    expect(blockers[0]).toContain("repetido")
+    expect(validatePreviewBlocking(rows)).toEqual([])
+    expect(validatePreviewWarnings(rows)).toEqual([])
   })
 
   it("emite advertencias sin bloquear", () => {

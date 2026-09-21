@@ -96,21 +96,25 @@ export function AdminImportPage() {
 
   const brandCandidates = useMemo(
     () =>
-      (preview ? preview.brands : []).map((brand) => ({
-        rawName: brand.rawName,
-        count: brand.count,
-        suggestedName: brand.suggestedBrandName,
-      })),
+      (preview ? preview.brands : [])
+        .map((brand) => ({
+          rawName: brand.rawName,
+          count: brand.count,
+          suggestedName: brand.suggestedBrandName,
+        }))
+        .sort((a, b) => a.rawName.localeCompare(b.rawName, "es")),
     [preview],
   )
 
   const categoryCandidates = useMemo(
     () =>
-      (preview ? preview.categories : []).map((category) => ({
-        rawName: category.rawName,
-        count: category.count,
-        suggestedName: category.suggestedCategoryName,
-      })),
+      (preview ? preview.categories : [])
+        .map((category) => ({
+          rawName: category.rawName,
+          count: category.count,
+          suggestedName: category.suggestedCategoryName,
+        }))
+        .sort((a, b) => a.rawName.localeCompare(b.rawName, "es")),
     [preview],
   )
 
@@ -480,11 +484,9 @@ export function AdminImportPage() {
                     que solo se arregla
                     {previewBlockers.length > 1 && "n"} en el archivo.
                   </p>
-                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto pr-3">
+                  <ul className="mt-2 space-y-1">
                     {previewBlockers.map((blocker) => (
-                      <li key={blocker} className="list-disc pl-5">
-                        {blocker}
-                      </li>
+                      <li key={blocker}>{blocker}</li>
                     ))}
                   </ul>
                   <p className="mt-2">
@@ -500,11 +502,9 @@ export function AdminImportPage() {
                   <p className="font-medium">
                     Advertencias: no frenan, pero revísalas antes de importar.
                   </p>
-                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto pr-3">
+                  <ul className="mt-2 space-y-1">
                     {previewWarnings.map((warning) => (
-                      <li key={warning} className="list-disc pl-5">
-                        {warning}
-                      </li>
+                      <li key={warning}>{warning}</li>
                     ))}
                   </ul>
                 </div>
@@ -792,6 +792,20 @@ function ReviewStep({
       omitted: stats.variantsOmitted,
     },
   ]
+  // Solo las advertencias que tocan lo que entra: cada aviso cita sus
+  // SKUs como «SKU (hoja fila N)» y se conserva si alguno está en el plan.
+  const includedSkus = useMemo(
+    () =>
+      new Set(
+        plan.products.flatMap((product) =>
+          product.variants.map((variant) => variant.sku),
+        ),
+      ),
+    [plan],
+  )
+  const includedWarnings = warnings.filter((warning) =>
+    [...includedSkus].some((sku) => warning.includes(`${sku} (`)),
+  )
   return (
     <div className="space-y-6">
       <Card>
@@ -825,20 +839,18 @@ function ReviewStep({
           </Table>
         </CardContent>
       </Card>
-      {warnings.length > 0 && (
+      {includedWarnings.length > 0 && (
         <div
           role="status"
           className="rounded-md border border-amber-400/40 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200"
         >
           <p className="font-medium">
-            Advertencias ({warnings.length}): no frenan la importación, pero
-            revísalas antes de confirmar.
+            Advertencias ({includedWarnings.length}): no frenan la importación,
+            pero revísalas antes de confirmar.
           </p>
-          <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto pr-3">
-            {warnings.map((warning) => (
-              <li key={warning} className="list-disc pl-5">
-                {warning}
-              </li>
+          <ul className="mt-2 space-y-1">
+            {includedWarnings.map((warning) => (
+              <li key={warning}>{warning}</li>
             ))}
           </ul>
         </div>

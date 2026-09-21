@@ -87,16 +87,18 @@ export function ProductsStep({
 
   const brandGroups = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return state.groups.filter((group) => {
-      if (group.brandRaw !== currentBrand) return false
-      if (query.length === 0) return true
-      if (group.name.toLowerCase().includes(query)) return true
-      return groupVariants(group, state.variants).some(
-        (variant) =>
-          variant.sku.toLowerCase().includes(query) ||
-          variant.color.toLowerCase().includes(query),
-      )
-    })
+    return state.groups
+      .filter((group) => {
+        if (group.brandRaw !== currentBrand) return false
+        if (query.length === 0) return true
+        if (group.name.toLowerCase().includes(query)) return true
+        return groupVariants(group, state.variants).some(
+          (variant) =>
+            variant.sku.toLowerCase().includes(query) ||
+            variant.color.toLowerCase().includes(query),
+        )
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "es"))
   }, [state.groups, state.variants, currentBrand, search])
 
   const newGroups = useMemo(
@@ -243,7 +245,10 @@ const GroupCard = memo(function GroupCard({
   onToggleVariant: (rowKey: string, omit: boolean) => void
 }) {
   const allVariants = useMemo(
-    () => groupVariants(group, variants),
+    () =>
+      groupVariants(group, variants).sort((a, b) =>
+        a.sku.localeCompare(b.sku, "es"),
+      ),
     [group, variants],
   )
   const priced = useMemo(
