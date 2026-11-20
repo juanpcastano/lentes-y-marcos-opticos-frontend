@@ -120,7 +120,7 @@ export interface AdminMediaAsset extends AdminMediaImage {
 }
 
 export type SyncRunStatus = "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED"
-export type SyncRunTrigger = "MANUAL" | "SCHEDULED"
+export type SyncRunTrigger = "MANUAL" | "SCHEDULED" | "IMPORT"
 
 export interface SyncRun {
   id: string
@@ -166,6 +166,39 @@ export interface SyncPreview {
   stockChanged: number
   priceChanged: number
   issues: SyncIssue[]
+}
+
+export interface SoftixImportNewSku {
+  sku: string
+  brand: string | null
+  reference: string | null
+  color: string | null
+  category: string | null
+  name: string | null
+  price: number
+  stock: number
+  blocked: boolean
+  blockReason: string | null
+  ignored: boolean
+}
+
+export interface SoftixImportPreview {
+  updated: number
+  hidden: number
+  errors: number
+  stockChanged: number
+  priceChanged: number
+  newCount: number
+  ignoredCount: number
+  blockedCount: number
+  issues: SyncIssue[]
+  newSkus: SoftixImportNewSku[]
+  ignoredBrands: string[]
+  ignoredSkus: string[]
+  toCreate: string[]
+  toUpdate: string[]
+  toHide: string[]
+  withError: string[]
 }
 
 export interface SoftixConnectionStatus {
@@ -240,6 +273,42 @@ export function deleteAdminProduct(id: string) {
 
 export function syncSoftixCatalog() {
   return api.post<SyncRun>("/admin/integration/softix/sync")
+}
+
+export function fetchSoftixImportPreview() {
+  return api.get<SoftixImportPreview>("/admin/integration/softix/import/preview")
+}
+
+export function runSoftixImport() {
+  return api.post<SyncRun>("/admin/integration/softix/import")
+}
+
+export function listIgnoredBrands() {
+  return api.get<string[]>("/admin/integration/softix/ignored-brands")
+}
+
+export function ignoreBrand(name: string) {
+  const query = new URLSearchParams({ name })
+  return api.post<void>(`/admin/integration/softix/ignored-brands?${query}`)
+}
+
+export function unignoreBrand(name: string) {
+  const query = new URLSearchParams({ name })
+  return api.delete<void>(`/admin/integration/softix/ignored-brands?${query}`)
+}
+
+export function listIgnoredSkus() {
+  return api.get<string[]>("/admin/integration/softix/ignored-skus")
+}
+
+export function ignoreSku(sku: string) {
+  const query = new URLSearchParams({ sku })
+  return api.post<void>(`/admin/integration/softix/ignored-skus?${query}`)
+}
+
+export function unignoreSku(sku: string) {
+  const query = new URLSearchParams({ sku })
+  return api.delete<void>(`/admin/integration/softix/ignored-skus?${query}`)
 }
 
 export function listSoftixSyncRuns(page: number) {

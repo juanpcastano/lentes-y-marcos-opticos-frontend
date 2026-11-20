@@ -1,11 +1,12 @@
 import { useState } from "react"
+import { ImportWizard } from "#/components/admin/integration/import-wizard"
 import { SyncRunsPanel } from "#/components/admin/integration/sync-runs-panel"
 import { SyncWizard } from "#/components/admin/integration/sync-wizard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs"
 
 /** Integración con Softix: sincronización guiada y revisión de registros. */
 export function IntegrationPage() {
-  const [tab, setTab] = useState("sync")
+  const [tab, setTab] = useState("import")
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -19,9 +20,13 @@ export function IntegrationPage() {
       </header>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
+          <TabsTrigger value="import">Importación</TabsTrigger>
           <TabsTrigger value="sync">Sincronización</TabsTrigger>
           <TabsTrigger value="logs">Registros</TabsTrigger>
         </TabsList>
+        <TabsContent value="import" className="mt-4">
+          <ImportWizard onViewLogs={() => setTab("logs")} />
+        </TabsContent>
         <TabsContent value="sync" className="mt-4">
           <SyncWizard onViewLogs={() => setTab("logs")} />
         </TabsContent>

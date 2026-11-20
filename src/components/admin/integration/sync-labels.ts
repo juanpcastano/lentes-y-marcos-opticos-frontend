@@ -27,6 +27,7 @@ export const SYNC_STATUS_CLASSES: Record<SyncRunStatus, string> = {
 export const SYNC_TRIGGER_LABELS: Record<SyncRunTrigger, string> = {
   MANUAL: "Manual",
   SCHEDULED: "Programada",
+  IMPORT: "Importación",
 }
 
 /** "campo: anterior → nuevo", o null si el registro no describe un cambio. */
