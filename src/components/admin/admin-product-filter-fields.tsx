@@ -97,113 +97,115 @@ export function AdminProductFilterFields({
         }
       >
         <FilterSection title="Revisión">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="filter-needs-review"
-            checked={values.needsReview ?? false}
-            onCheckedChange={(checked) =>
-              onChange({ needsReview: checked === true ? true : undefined })
-            }
-          />
-          <Label
-            htmlFor="filter-needs-review"
-            className="cursor-pointer text-sm font-normal"
-          >
-            Solo con pendientes
-          </Label>
-        </div>
-      </FilterSection>
-
-      <FilterSection title="Marca">
-        {loadingFacets ? (
-          <FilterChecklistSkeleton />
-        ) : (
-          <BrandFilter
-            brands={options.brands}
-            selected={values.brands}
-            onToggle={(brand) =>
-              onChange({ brands: toggleValue(values.brands, brand) })
-            }
-          />
-        )}
-      </FilterSection>
-
-      <FilterSection title="Categoría">
-        {loadingFacets ? (
-          <FilterChecklistSkeleton rows={6} />
-        ) : (
-          <CategoryFilter
-            categories={options.categories}
-            selected={values.categories}
-            onToggle={(category) =>
-              onChange({ categories: toggleValue(values.categories, category) })
-            }
-          />
-        )}
-      </FilterSection>
-
-      <FilterSection title="Material">
-        {loadingFacets ? (
-          <FilterChecklistSkeleton rows={4} />
-        ) : (
-          <MaterialFilter
-            materials={options.materials}
-            selected={values.materials}
-            onToggle={(material) =>
-              onChange({ materials: toggleValue(values.materials, material) })
-            }
-          />
-        )}
-      </FilterSection>
-
-      <FilterSection title="Forma">
-        {loadingFacets ? (
-          <FilterChecklistSkeleton rows={4} />
-        ) : (
-          <ShapeFilter
-            shapes={options.shapes}
-            selected={values.shapes}
-            onToggle={(shape) =>
-              onChange({ shapes: toggleValue(values.shapes, shape) })
-            }
-          />
-        )}
-      </FilterSection>
-
-      <FilterSection title="Color">
-        {loadingFacets ? (
-          <FilterChecklistSkeleton rows={4} />
-        ) : (
-          <ColorFilter
-            colors={options.colors}
-            selected={values.colors}
-            onToggle={(color) =>
-              onChange({ colors: toggleValue(values.colors, color) })
-            }
-          />
-        )}
-      </FilterSection>
-
-      <FilterSection title="Precio">
-        {loadingFacets ? (
-          <div className="space-y-4 px-1" aria-label="Cargando precio...">
-            <Skeleton className="h-2 w-full" />
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-20" />
-            </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-needs-review"
+              checked={values.needsReview ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ needsReview: checked === true ? true : undefined })
+              }
+            />
+            <Label
+              htmlFor="filter-needs-review"
+              className="cursor-pointer text-sm font-normal"
+            >
+              Solo con pendientes
+            </Label>
           </div>
-        ) : (
-          <PriceFilter
-            min={options.priceMin}
-            max={options.priceMax}
-            value={[effectivePriceMin, effectivePriceMax]}
-            onChange={([priceMin, priceMax]) =>
-              onChange({ priceMin, priceMax })
-            }
-          />
-        )}
-      </FilterSection>
+        </FilterSection>
+
+        <FilterSection title="Marca">
+          {loadingFacets ? (
+            <FilterChecklistSkeleton />
+          ) : (
+            <BrandFilter
+              brands={options.brands}
+              selected={values.brands}
+              onToggle={(brand) =>
+                onChange({ brands: toggleValue(values.brands, brand) })
+              }
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title="Categoría">
+          {loadingFacets ? (
+            <FilterChecklistSkeleton rows={6} />
+          ) : (
+            <CategoryFilter
+              categories={options.categories}
+              selected={values.categories}
+              onToggle={(category) =>
+                onChange({
+                  categories: toggleValue(values.categories, category),
+                })
+              }
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title="Material">
+          {loadingFacets ? (
+            <FilterChecklistSkeleton rows={4} />
+          ) : (
+            <MaterialFilter
+              materials={options.materials}
+              selected={values.materials}
+              onToggle={(material) =>
+                onChange({ materials: toggleValue(values.materials, material) })
+              }
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title="Forma">
+          {loadingFacets ? (
+            <FilterChecklistSkeleton rows={4} />
+          ) : (
+            <ShapeFilter
+              shapes={options.shapes}
+              selected={values.shapes}
+              onToggle={(shape) =>
+                onChange({ shapes: toggleValue(values.shapes, shape) })
+              }
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title="Color">
+          {loadingFacets ? (
+            <FilterChecklistSkeleton rows={4} />
+          ) : (
+            <ColorFilter
+              colors={options.colors}
+              selected={values.colors}
+              onToggle={(color) =>
+                onChange({ colors: toggleValue(values.colors, color) })
+              }
+            />
+          )}
+        </FilterSection>
+
+        <FilterSection title="Precio">
+          {loadingFacets ? (
+            <div className="space-y-4 px-1" aria-label="Cargando precio...">
+              <Skeleton className="h-2 w-full" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+          ) : (
+            <PriceFilter
+              min={options.priceMin}
+              max={options.priceMax}
+              value={[effectivePriceMin, effectivePriceMax]}
+              onChange={([priceMin, priceMax]) =>
+                onChange({ priceMin, priceMax })
+              }
+            />
+          )}
+        </FilterSection>
       </div>
     </div>
   )

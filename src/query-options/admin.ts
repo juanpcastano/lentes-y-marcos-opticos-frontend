@@ -5,7 +5,9 @@ import {
   listAdminBrands,
   listAdminCategories,
   listAdminHeroSlides,
+  getSoftixSyncRun,
   listAdminProducts,
+  listSoftixSyncRuns,
 } from "#/services/admin"
 import type { ProductStatus } from "#/services/admin"
 
@@ -13,6 +15,11 @@ export const ADMIN_PRODUCTS_QUERY_KEY = ["admin", "products"] as const
 export const ADMIN_CATEGORIES_QUERY_KEY = ["admin", "categories"] as const
 export const ADMIN_BRANDS_QUERY_KEY = ["admin", "brands"] as const
 export const ADMIN_HERO_SLIDES_QUERY_KEY = ["admin", "hero-slides"] as const
+export const ADMIN_SYNC_RUNS_QUERY_KEY = [
+  "admin",
+  "integration",
+  "runs",
+] as const
 
 export function createAdminProductsQueryOptions(params?: {
   q?: string
@@ -66,5 +73,20 @@ export function createAdminHeroSlidesQueryOptions() {
   return queryOptions({
     queryKey: ADMIN_HERO_SLIDES_QUERY_KEY,
     queryFn: listAdminHeroSlides,
+  })
+}
+
+export function createAdminSyncRunsQueryOptions(page: number) {
+  return queryOptions({
+    queryKey: [...ADMIN_SYNC_RUNS_QUERY_KEY, page],
+    queryFn: () => listSoftixSyncRuns(page),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function createAdminSyncRunQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: [...ADMIN_SYNC_RUNS_QUERY_KEY, id],
+    queryFn: () => getSoftixSyncRun(id),
   })
 }

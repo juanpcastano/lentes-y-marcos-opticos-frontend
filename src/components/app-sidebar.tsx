@@ -9,7 +9,7 @@ import {
   Store,
   Tag,
   LogOut,
-  Upload,
+  Plug,
 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -134,11 +134,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={location.pathname === "/admin/import"}
+                  isActive={location.pathname === "/admin/integracion"}
                 >
-                  <Link to="/admin/import">
-                    <Upload />
-                    Importar
+                  <Link to="/admin/integracion">
+                    <Plug />
+                    Integración
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

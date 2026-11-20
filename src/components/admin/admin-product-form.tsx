@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Eye, Loader2 } from "lucide-react"
+import { Eye, Loader2, Trash2 } from "lucide-react"
 import { Button } from "#/components/ui/button"
 import {
   Tooltip,
@@ -26,28 +26,44 @@ import {
 } from "#/components/ui/select"
 import { Textarea } from "#/components/ui/textarea"
 import { toast } from "#/hooks/use-toast"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import { ADMIN_PRODUCTS_QUERY_KEY } from "#/query-options/admin"
 import { formatCop, productTitle } from "#/components/catalog/types"
 import { ProductReviewCard } from "#/components/admin/product-review-card"
 import {
   adminErrorMessage,
+  deleteAdminProduct,
   setProductPrimaryImage,
   updateAdminProduct,
   uploadProductImage,
 } from "#/services/admin"
 import type { AdminProduct, ProductStatus } from "#/services/admin"
 
-export function AdminProductForm({
-  product,
-}: {
-  product: AdminProduct
-}) {
+export function AdminProductForm({ product }: { product: AdminProduct }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<ProductStatus>(product.status)
   const [material, setMaterial] = useState(product.material ?? "")
   const [shape, setShape] = useState(product.shape ?? "")
   const [description, setDescription] = useState(product.description ?? "")
   const [uploading, setUploading] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const navigate = useNavigate()
+
+  const remove = useMutation({
+    mutationFn: () => deleteAdminProduct(product.id),
+    onSuccess: async () => {
+      queryClient.removeQueries({
+        queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, product.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_PRODUCTS_QUERY_KEY,
+      })
+      toast({ title: "Producto eliminado" })
+      await navigate({ to: "/admin/products" })
+    },
+    onError: (error) =>
+      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+  })
 
   const save = useMutation({
     mutationFn: () =>
@@ -266,6 +282,36 @@ export function AdminProductForm({
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6 border-destructive/30">
+        <CardHeader>
+          <CardTitle>Eliminar producto</CardTitle>
+          <CardDescription>
+            Quita el producto de la base de datos local. Sus imágenes siguen en
+            la galería.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            className="w-fit"
+            disabled={remove.isPending}
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <Trash2 className="size-4" />
+            Eliminar producto
+          </Button>
+        </CardContent>
+      </Card>
+
+      <PermanentDeleteDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={`¿Eliminar el producto “${productTitle(product)}”?`}
+        description="El producto se eliminará de la base de datos local y no se puede deshacer. Si el SKU sigue en Softix, la sincronización no lo recreará; solo lo hará la importación."
+        isPending={remove.isPending}
+        onConfirm={() => remove.mutate()}
+      />
     </div>
   )
 }

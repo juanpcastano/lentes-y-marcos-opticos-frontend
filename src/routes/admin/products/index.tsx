@@ -17,6 +17,7 @@ import {
 import {
   adminErrorMessage,
   bulkSetProductsStatus,
+  deleteAdminProduct,
   syncSoftixCatalog,
 } from "#/services/admin"
 import type { ProductStatus } from "#/services/admin"
@@ -96,8 +97,32 @@ function ProductsPage() {
       })
       toast({
         title: "Sincronización terminada",
-        description: `${result.created} creados, ${result.updated} actualizados, ${result.hidden} ocultos, ${result.skipped} omitidos.`,
+        description: `${result.updated} actualizados, ${result.hidden} ocultos, ${result.errors} con error.`,
       })
+    },
+    onError: (error) =>
+      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+  })
+
+  const removeProducts = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = await Promise.allSettled(ids.map(deleteAdminProduct))
+      const failed = results.filter((result) => result.status === "rejected")
+      return { deleted: ids.length - failed.length, failed: failed.length }
+    },
+    onSuccess: async ({ deleted, failed }) => {
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_PRODUCTS_QUERY_KEY,
+      })
+      if (failed > 0) {
+        toast({
+          variant: "destructive",
+          title: `No se pudieron eliminar ${failed} producto(s)`,
+          description: `${deleted} eliminado(s).`,
+        })
+        return
+      }
+      toast({ title: `${deleted} producto(s) eliminado(s)` })
     },
     onError: (error) =>
       toast({ variant: "destructive", title: adminErrorMessage(error) }),
@@ -213,6 +238,8 @@ function ProductsPage() {
         onPageChange={(page) => update({ page })}
         onBulkStatus={(ids, status) => bulkStatus.mutate({ ids, status })}
         isUpdatingStatus={bulkStatus.isPending}
+        onDelete={(ids) => removeProducts.mutate(ids)}
+        isDeleting={removeProducts.isPending}
         returnSearch={search}
         filtersContent={<Filters />}
         statuses={search.statuses ?? []}

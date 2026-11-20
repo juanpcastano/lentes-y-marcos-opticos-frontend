@@ -119,11 +119,59 @@ export interface AdminMediaAsset extends AdminMediaImage {
   references: AdminMediaReference[]
 }
 
-export interface SyncResult {
-  created: number
+export type SyncRunStatus = "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED"
+export type SyncRunTrigger = "MANUAL" | "SCHEDULED"
+
+export interface SyncRun {
+  id: string
+  trigger: SyncRunTrigger
+  status: SyncRunStatus
+  startedAt: string
+  finishedAt: string | null
   updated: number
   hidden: number
-  skipped: number
+  errors: number
+  errorMessage: string | null
+}
+
+export interface SyncLog {
+  id: number
+  level: "INFO" | "WARN" | "ERROR"
+  sku: string | null
+  field: string | null
+  oldValue: string | null
+  newValue: string | null
+  message: string
+  createdAt: string
+}
+
+export interface SyncRunDetail {
+  run: SyncRun
+  logs: SyncLog[]
+}
+
+export interface SyncIssue {
+  level: "INFO" | "WARN" | "ERROR"
+  sku: string | null
+  field: string | null
+  oldValue: string | null
+  newValue: string | null
+  message: string
+}
+
+export interface SyncPreview {
+  updated: number
+  hidden: number
+  errors: number
+  stockChanged: number
+  priceChanged: number
+  issues: SyncIssue[]
+}
+
+export interface SoftixConnectionStatus {
+  connected: boolean
+  message: string
+  checkedAt: string
 }
 
 export async function listAdminProducts(params?: {
@@ -178,8 +226,31 @@ export function bulkSetProductsStatus(ids: string[], status: ProductStatus) {
   )
 }
 
+export function fetchSoftixConnection() {
+  return api.get<SoftixConnectionStatus>("/admin/integration/softix/connection")
+}
+
+export function fetchSoftixSyncPreview() {
+  return api.get<SyncPreview>("/admin/integration/softix/preview")
+}
+
+export function deleteAdminProduct(id: string) {
+  return api.delete<void>(`/admin/products/${id}`)
+}
+
 export function syncSoftixCatalog() {
-  return api.post<SyncResult>("/admin/softix/sync")
+  return api.post<SyncRun>("/admin/integration/softix/sync")
+}
+
+export function listSoftixSyncRuns(page: number) {
+  const query = new URLSearchParams({ page: String(page), size: "20" })
+  return api.get<PageResponse<SyncRun>>(
+    `/admin/integration/softix/runs?${query}`,
+  )
+}
+
+export function getSoftixSyncRun(id: string) {
+  return api.get<SyncRunDetail>(`/admin/integration/softix/runs/${id}`)
 }
 
 export function uploadProductImage(

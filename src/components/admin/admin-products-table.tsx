@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Search,
   Settings2,
+  Trash2,
   X,
 } from "lucide-react"
 import * as TanStackTable from "@tanstack/react-table"
@@ -25,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from "#/components/ui/collapsible"
 import { Checkbox } from "#/components/ui/checkbox"
+import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -81,6 +83,8 @@ interface AdminProductsTableProps {
   onPageChange: (page: number) => void
   onBulkStatus: (ids: string[], status: ProductStatus) => void
   isUpdatingStatus: boolean
+  onDelete: (ids: string[]) => void
+  isDeleting: boolean
   returnSearch: AdminProductsSearch
   filtersContent?: ReactNode
   statuses: ProductStatus[]
@@ -254,6 +258,8 @@ export function AdminProductsTable({
   onPageChange,
   onBulkStatus,
   isUpdatingStatus,
+  onDelete,
+  isDeleting,
   returnSearch,
   filtersContent,
   statuses,
@@ -265,6 +271,7 @@ export function AdminProductsTable({
   const [rowSelection, setRowSelection] = useState<
     LegacyReactTable<AdminProduct>["state"]["rowSelection"]
   >({})
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
 
   useEffect(() => {
     setRowSelection((current) => (Object.keys(current).length ? {} : current))
@@ -391,9 +398,7 @@ export function AdminProductsTable({
         cell: ({ row }) => {
           const product = row.original
           const isOutOfStock = product.status === "ACTIVE" && product.stock <= 0
-          const label = isOutOfStock
-            ? "Agotado"
-            : statusLabels[product.status]
+          const label = isOutOfStock ? "Agotado" : statusLabels[product.status]
           const colorClass = isOutOfStock
             ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
             : product.status === "ACTIVE"
@@ -460,12 +465,28 @@ export function AdminProductsTable({
                 <EyeOff className="mr-2 size-4" />
                 Ocultar
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={isDeleting}
+                onClick={() => setPendingDelete([row.original.id])}
+              >
+                <Trash2 className="mr-2 size-4" />
+                Eliminar producto
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    [onSortChange, returnSearch, sort, onBulkStatus, isUpdatingStatus],
+    [
+      onSortChange,
+      returnSearch,
+      sort,
+      onBulkStatus,
+      isUpdatingStatus,
+      isDeleting,
+    ],
   )
 
   const table = useLegacyTable({
@@ -550,6 +571,17 @@ export function AdminProductsTable({
               }
             >
               Ocultar ({selectedRows.length})
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={isDeleting}
+              onClick={() =>
+                setPendingDelete(selectedRows.map((row) => row.original.id))
+              }
+            >
+              <Trash2 />
+              Eliminar ({selectedRows.length})
             </Button>
           </div>
         )}
@@ -727,6 +759,54 @@ export function AdminProductsTable({
           </Pagination>
         )}
       </div>
+      <DeleteProductsDialog
+        ids={pendingDelete}
+        rows={rows}
+        isDeleting={isDeleting}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onConfirm={() => {
+          if (!pendingDelete) return
+          onDelete(pendingDelete)
+          setRowSelection({})
+          setPendingDelete(null)
+        }}
+      />
     </div>
+  )
+}
+
+function DeleteProductsDialog({
+  ids,
+  rows,
+  isDeleting,
+  onOpenChange,
+  onConfirm,
+}: {
+  ids: string[] | null
+  rows: AdminProduct[]
+  isDeleting: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+}) {
+  const names = (ids ?? [])
+    .map((id) => rows.find((row) => row.id === id))
+    .filter((product): product is AdminProduct => Boolean(product))
+    .map((product) => productTitle(product))
+  const count = ids?.length ?? 0
+
+  return (
+    <PermanentDeleteDialog
+      open={ids !== null}
+      onOpenChange={onOpenChange}
+      isPending={isDeleting}
+      confirmDisabled={!ids}
+      onConfirm={onConfirm}
+      title={
+        count > 1
+          ? `¿Eliminar ${count} productos?`
+          : `¿Eliminar el producto “${names[0] ?? ""}”?`
+      }
+      description={`Los productos se eliminarán de la base de datos local. Sus imágenes seguirán disponibles en la galería. Si el SKU sigue en Softix, la sincronización no lo recreará; solo lo hará la importación.${names.length > 1 ? ` Productos: ${names.slice(0, 3).join(", ")}${names.length > 3 ? ` y ${names.length - 3} más` : ""}.` : ""}`}
+    />
   )
 }

@@ -19,10 +19,5 @@ function EditProductPage() {
     return <p className="text-muted-foreground">Cargando producto...</p>
   if (error) return <p className="text-sm text-destructive">{error.message}</p>
 
-  return (
-    <AdminProductForm
-      key={data.id}
-      product={data}
-    />
-  )
+  return <AdminProductForm key={data.id} product={data} />
 }
