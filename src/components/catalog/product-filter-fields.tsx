@@ -18,7 +18,7 @@ export interface ProductFilterValues {
   colors: string[]
   priceMin?: number
   priceMax?: number
-  onSale?: boolean
+  includeOutOfStock?: boolean
   isNew?: boolean
 }
 
@@ -81,29 +81,31 @@ export function ProductFilterFields({
             colors: [],
             priceMin: undefined,
             priceMax: undefined,
-            onSale: undefined,
             isNew: undefined,
+            includeOutOfStock: undefined,
           })
         }
       >
         Limpiar filtros
       </Button>
 
-      <FilterSection title="Ofertas y novedades">
+      <FilterSection title="Novedades y stock">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Checkbox
-              id="filter-on-sale"
-              checked={values.onSale ?? false}
+              id="filter-include-out-of-stock"
+              checked={values.includeOutOfStock ?? false}
               onCheckedChange={(checked) =>
-                onChange({ onSale: checked === true ? true : undefined })
+                onChange({
+                  includeOutOfStock: checked === true ? true : undefined,
+                })
               }
             />
             <Label
-              htmlFor="filter-on-sale"
+              htmlFor="filter-include-out-of-stock"
               className="cursor-pointer text-sm font-normal"
             >
-              En oferta
+              Mostrar agotados
             </Label>
           </div>
           <div className="flex items-center gap-2">

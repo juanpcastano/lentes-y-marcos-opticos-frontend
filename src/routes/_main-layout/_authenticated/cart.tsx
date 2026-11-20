@@ -47,10 +47,7 @@ function RouteComponent() {
 
       <div className="flex flex-col gap-4">
         {cart.items.map((line) => (
-          <CartLineCard
-            key={cartLineKey(line.productId, line.variantId)}
-            line={line}
-          />
+          <CartLineCard key={cartLineKey(line.productId)} line={line} />
         ))}
       </div>
 
@@ -64,7 +61,7 @@ function RouteComponent() {
           </div>
           {cart.unavailableItems.map((line) => (
             <CartLineCard
-              key={cartLineKey(line.productId, line.variantId)}
+              key={cartLineKey(line.productId)}
               line={line}
               unavailable
             />
@@ -104,17 +101,16 @@ function CartLineCard({
   const [submitting, setSubmitting] = useState(false)
 
   const updateMutation = useMutation({
-    mutationFn: (next: number) =>
-      updateQuantity(line.productId, next, line.variantId),
+    mutationFn: (next: number) => updateQuantity(line.productId, next),
     onMutate: async (next: number) => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
       if (previous) {
-        const lineKey = cartLineKey(line.productId, line.variantId)
+        const lineKey = cartLineKey(line.productId)
         const updatedItems = unavailable
           ? previous.items
           : previous.items.map((item) =>
-              cartLineKey(item.productId, item.variantId) === lineKey
+              cartLineKey(item.productId) === lineKey
                 ? { ...item, quantity: next, lineTotal: item.unitPrice * next }
                 : item,
             )
@@ -139,20 +135,20 @@ function CartLineCard({
   })
 
   const removeMutation = useMutation({
-    mutationFn: () => removeFromCart(line.productId, line.variantId),
+    mutationFn: () => removeFromCart(line.productId),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: CART_QUERY_KEY })
       const previous = queryClient.getQueryData<Cart>(CART_QUERY_KEY)
       if (previous) {
-        const lineKey = cartLineKey(line.productId, line.variantId)
+        const lineKey = cartLineKey(line.productId)
         const updatedItems = unavailable
           ? previous.items
           : previous.items.filter(
-              (item) => cartLineKey(item.productId, item.variantId) !== lineKey,
+              (item) => cartLineKey(item.productId) !== lineKey,
             )
         const updatedUnavailableItems = unavailable
           ? previous.unavailableItems.filter(
-              (item) => cartLineKey(item.productId, item.variantId) !== lineKey,
+              (item) => cartLineKey(item.productId) !== lineKey,
             )
           : previous.unavailableItems
         queryClient.setQueryData<Cart>(CART_QUERY_KEY, {
@@ -210,11 +206,7 @@ function CartLineCard({
                 size="sm"
                 className="h-auto w-fit p-0"
               >
-                <Link
-                  to="/product/$id"
-                  params={{ id: line.productId }}
-                  search={{ variant: line.variantId }}
-                >
+                <Link to="/product/$id" params={{ id: line.productId }}>
                   <Eye className="size-3.5" />
                   Ver producto
                 </Link>

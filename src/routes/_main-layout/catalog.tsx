@@ -5,8 +5,6 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { ChevronDown, X } from "lucide-react"
 
 import { createInfiniteProductsQueryOptions } from "#/query-options/products"
-import createCategoriesQueryOptions from "#/query-options/categories"
-import createBrandsQueryOptions from "#/query-options/brands"
 import { useMediaQuery } from "#/hooks/use-media-query"
 import { fetchProductFacets } from "#/services/products"
 import { ProductCard } from "#/components/catalog/product-card"
@@ -28,7 +26,7 @@ const catalogSearchSchema = z.object({
   shapes: z.array(z.string()).default([]),
   colors: z.array(z.string()).default([]),
   categories: z.array(z.string()).default([]),
-  onSale: z.boolean().optional(),
+  includeOutOfStock: z.boolean().optional(),
   isNew: z.boolean().optional(),
   q: z.string().optional(),
   sort: z.enum(["relevance", "price-asc", "price-desc"]).default("relevance"),
@@ -54,12 +52,6 @@ function CatalogPage() {
   // checkboxes (p. ej. ~400 marcas) y congelaba la apertura.
   const isDesktop = useMediaQuery("(min-width: 1024px)")
 
-  const { data: categories = [], isPending: categoriesPending } = useQuery(
-    createCategoriesQueryOptions(),
-  )
-  const { data: brands = [], isPending: brandsPending } = useQuery(
-    createBrandsQueryOptions(),
-  )
   const { data: facets, isPending: facetsPending } = useQuery({
     queryKey: ["products", "facets"],
     queryFn: fetchProductFacets,
@@ -75,7 +67,7 @@ function CatalogPage() {
     colors: search.colors,
     priceMin: search.priceMin,
     priceMax: search.priceMax,
-    onSale: search.onSale,
+    includeOutOfStock: search.includeOutOfStock,
     isNew: search.isNew,
     q: search.q,
     sort: search.sort,
@@ -88,17 +80,11 @@ function CatalogPage() {
     productsQuery.data?.pages.flatMap((page) => page.content) ?? []
   const totalProducts = productsQuery.data?.pages.at(-1)?.totalElements ?? 0
 
-  const allBrands = useMemo(
-    () => brands.map((brand) => brand.name).sort(),
-    [brands],
-  )
+  const allBrands = useMemo(() => facets?.brands ?? [], [facets])
   const allMaterials = useMemo(() => facets?.materials ?? [], [facets])
   const allShapes = useMemo(() => facets?.shapes ?? [], [facets])
   const allColors = useMemo(() => facets?.colors ?? [], [facets])
-  const allCategories = useMemo(
-    () => categories.map((category) => category.name).sort(),
-    [categories],
-  )
+  const allCategories = useMemo(() => facets?.categories ?? [], [facets])
 
   const priceMin = facets?.minPrice ?? 0
   const priceMax = facets?.maxPrice ?? 0
@@ -127,7 +113,6 @@ function CatalogPage() {
         }}
         values={search}
         onChange={updateSearch}
-        loadingTaxonomies={categoriesPending || brandsPending}
         loadingFacets={facetsPending}
       />
     )
@@ -206,7 +191,7 @@ function CatalogPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {products.map((product) => (
-                <ProductCard key={product.variantId} product={product} />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}

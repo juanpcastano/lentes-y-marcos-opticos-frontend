@@ -18,17 +18,6 @@ import type {
   LegacyReactTable,
 } from "@tanstack/react-table/legacy"
 import { Link } from "@tanstack/react-router"
-import { PermanentDeleteDialog } from "#/components/permanent-delete-dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "#/components/ui/alert-dialog"
 import { Button } from "#/components/ui/button"
 import {
   Collapsible,
@@ -47,13 +36,6 @@ import {
 } from "#/components/ui/dropdown-menu"
 import { Input } from "#/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#/components/ui/select"
-import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -70,19 +52,21 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table"
-import type { AdminProduct, PageResponse } from "#/services/admin"
+import { formatCop, productTitle } from "#/components/catalog/types"
+import {
+  hasReviewIssues,
+  productReviewIssues,
+} from "#/components/admin/product-review"
+import type {
+  AdminProduct,
+  PageResponse,
+  ProductStatus,
+} from "#/services/admin"
 import type { AdminProductsSearch } from "#/components/admin/admin-products-search"
-import { productReviewIssues } from "#/components/admin/product-review"
 
 export interface AdminProductsFilters {
   q: string
-  active: "true" | "false" | undefined
-  needsReview: "true" | undefined
-}
-
-export interface AdminProductsSort {
-  field: "name" | "brand" | "createdAt" | "updatedAt"
-  direction: "asc" | "desc"
+  needsReview: boolean
 }
 
 interface AdminProductsTableProps {
@@ -91,132 +75,66 @@ interface AdminProductsTableProps {
   isPlaceholderData: boolean
   filters: AdminProductsFilters
   onFiltersChange: (filters: AdminProductsFilters) => void
-  sort:
-    | `${AdminProductsSort["field"]},${AdminProductsSort["direction"]}`
-    | undefined
-  onSortChange: (sort: AdminProductsSort | undefined) => void
+  sort: string | undefined
+  onSortChange: (sort: string | undefined) => void
   page: number
   onPageChange: (page: number) => void
-  onDelete: (ids: string[]) => void
-  isDeleting: boolean
-  onBulkStatus: (ids: string[], isActive: boolean) => void
+  onBulkStatus: (ids: string[], status: ProductStatus) => void
   isUpdatingStatus: boolean
   returnSearch: AdminProductsSearch
-  filtersContent: ReactNode
+  filtersContent?: ReactNode
+  statuses: ProductStatus[]
+  onStatusesChange: (statuses: ProductStatus[]) => void
 }
 
 const COLUMN_LABELS: Record<string, string> = {
+  sku: "SKU",
   name: "Producto",
   brand: "Marca",
   price: "Precio",
+  stock: "Stock",
   status: "Estado",
-  createdAt: "Creación",
-  updatedAt: "Última edición",
 }
 
-const SORT_OPTIONS: Record<string, { label: string; desc: boolean }[]> = {
+const SORT_OPTIONS: Record<string, { label: string; value: string }[]> = {
+  sku: [
+    { label: "SKU ascendente", value: "sku,asc" },
+    { label: "SKU descendente", value: "sku,desc" },
+  ],
   name: [
-    { label: "De la A a la Z", desc: false },
-    { label: "De la Z a la A", desc: true },
+    { label: "De la A a la Z", value: "name,asc" },
+    { label: "De la Z a la A", value: "name,desc" },
   ],
   brand: [
-    { label: "De la A a la Z", desc: false },
-    { label: "De la Z a la A", desc: true },
+    { label: "De la A a la Z", value: "brand,asc" },
+    { label: "De la Z a la A", value: "brand,desc" },
   ],
-  createdAt: [
-    { label: "Más recientes primero", desc: true },
-    { label: "Más antiguas primero", desc: false },
+  price: [
+    { label: "Menor a mayor", value: "price,asc" },
+    { label: "Mayor a menor", value: "price,desc" },
   ],
-  updatedAt: [
-    { label: "Más recientes primero", desc: true },
-    { label: "Más antiguas primero", desc: false },
+  stock: [
+    { label: "Menor a mayor", value: "stock,asc" },
+    { label: "Mayor a menor", value: "stock,desc" },
+  ],
+  status: [
+    { label: "Ascendente", value: "status,asc" },
+    { label: "Descendente", value: "status,desc" },
   ],
 }
 
-const DEFAULT_SORT_OPTIONS: { label: string; desc: boolean }[] = [
-  { label: "Orden ascendente", desc: false },
-  { label: "Orden descendente", desc: true },
-]
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("es-CO", {
-    dateStyle: "medium",
-  }).format(new Date(value))
-}
-
-function formatPrice(value: number): string {
-  return `$${value.toLocaleString("es-CO")}`
-}
-
-function VariantStatusCell({ product }: { product: AdminProduct }) {
-  const total = product.variants.length
-  const activeCount = product.variants.filter(
-    (variant) => variant.isActive,
-  ).length
-  if (total === 0) {
-    return (
-      <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-        Sin variantes
-      </span>
-    )
-  }
-  if (activeCount === total) {
-    return (
-      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
-        Activo
-      </span>
-    )
-  }
-  if (activeCount === 0) {
-    return (
-      <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-        Inactivo
-      </span>
-    )
-  }
-  return (
-    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
-      {`Parcial ${activeCount}/${total}`}
-    </span>
-  )
-}
-
-function VariantPriceCell({ product }: { product: AdminProduct }) {
-  const prices = product.variants
-    .map((variant) => variant.discountedPrice ?? variant.price ?? 0)
-    .filter((price) => price > 0)
-  if (prices.length === 0) {
-    return <span className="text-muted-foreground">Sin precio</span>
-  }
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  return (
-    <div>
-      <p>
-        {min === max
-          ? formatPrice(min)
-          : `${formatPrice(min)} – ${formatPrice(max)}`}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {product.variants.length === 1
-          ? "1 variante"
-          : `${product.variants.length} variantes`}
-      </p>
-    </div>
-  )
-}
-
-/** Motivos por los que un producto ya en tienda necesita revisión. */
-function reviewReasons(product: AdminProduct): string[] {
-  return productReviewIssues(product).map((issue) => issue.text)
+const statusLabels: Record<ProductStatus, string> = {
+  ACTIVE: "Activo",
+  INACTIVE: "Inactivo",
+  HIDDEN: "Oculto",
 }
 
 function ReviewBadge({ product }: { product: AdminProduct }) {
-  const reasons = reviewReasons(product)
-  if (reasons.length === 0) return null
+  const issues = productReviewIssues(product)
+  if (issues.length === 0) return null
   return (
     <span
-      title={`Necesita revisión: ${reasons.join(", ")}.`}
+      title={`Pendientes: ${issues.map((issue) => issue.text).join(", ")}.`}
       className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-amber-800 dark:bg-amber-950 dark:text-amber-300"
     >
       Revisar
@@ -242,20 +160,20 @@ function getPageItems(
 }
 
 function ColumnHeader({
-  column,
+  columnId,
   title,
+  sort,
+  onSortChange,
+  canSort = true,
 }: {
-  column: {
-    id: string
-    getCanSort: () => boolean
-    getIsSorted: () => false | "asc" | "desc"
-    toggleSorting: (desc?: boolean) => void
-    getCanHide: () => boolean
-    toggleVisibility: (value: boolean) => void
-  }
+  columnId: string
   title: string
+  sort: string | undefined
+  onSortChange: (sort: string | undefined) => void
+  canSort?: boolean
 }) {
-  const sorted = column.getIsSorted()
+  const options = SORT_OPTIONS[columnId]
+  if (!canSort || !options) return <span>{title}</span>
 
   return (
     <DropdownMenu>
@@ -268,26 +186,57 @@ function ColumnHeader({
       <DropdownMenuContent align="start">
         <DropdownMenuLabel>{title}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {column.getCanSort() && (
-          <>
-            {(SORT_OPTIONS[column.id] ?? DEFAULT_SORT_OPTIONS).map((option) => (
-              <DropdownMenuItem
-                key={option.label}
-                onClick={() => column.toggleSorting(option.desc)}
-              >
-                {option.label}
-                {sorted === (option.desc ? "desc" : "asc") ? (
-                  <Check className="ml-auto" />
-                ) : null}
-              </DropdownMenuItem>
-            ))}
-          </>
-        )}
-        {column.getCanHide() && (
-          <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-            Ocultar columna
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            onClick={() =>
+              onSortChange(sort === option.value ? undefined : option.value)
+            }
+          >
+            {option.label}
+            {sort === option.value ? <Check className="ml-auto" /> : null}
           </DropdownMenuItem>
-        )}
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function StatusColumnHeader({
+  statuses,
+  onStatusesChange,
+}: {
+  statuses: ProductStatus[]
+  onStatusesChange: (statuses: ProductStatus[]) => void
+}) {
+  const toggleStatus = (status: ProductStatus) => {
+    if (statuses.includes(status)) {
+      onStatusesChange(statuses.filter((s) => s !== status))
+    } else {
+      onStatusesChange([...statuses, status])
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button className="-ml-3" size="sm" variant="ghost">
+          Estado
+          <ChevronDown />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuLabel>Filtrar</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {(["ACTIVE", "INACTIVE", "HIDDEN"] as ProductStatus[]).map((status) => (
+          <DropdownMenuCheckboxItem
+            key={status}
+            checked={statuses.includes(status)}
+            onCheckedChange={() => toggleStatus(status)}
+          >
+            {statusLabels[status]}
+          </DropdownMenuCheckboxItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -303,12 +252,12 @@ export function AdminProductsTable({
   onSortChange,
   page,
   onPageChange,
-  onDelete,
-  isDeleting,
   onBulkStatus,
   isUpdatingStatus,
   returnSearch,
   filtersContent,
+  statuses,
+  onStatusesChange,
 }: AdminProductsTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<
     LegacyReactTable<AdminProduct>["state"]["columnVisibility"]
@@ -316,35 +265,15 @@ export function AdminProductsTable({
   const [rowSelection, setRowSelection] = useState<
     LegacyReactTable<AdminProduct>["state"]["rowSelection"]
   >({})
-  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
-  const [pendingStatus, setPendingStatus] = useState<{
-    ids: string[]
-    isActive: boolean
-  } | null>(null)
-
-  function requestDelete(ids: string[]) {
-    if (ids.length === 0 || isDeleting) return
-    setPendingDelete(ids)
-  }
-
-  function requestStatus(ids: string[], isActive: boolean) {
-    if (ids.length === 0 || isUpdatingStatus) return
-    setPendingStatus({ ids, isActive })
-  }
-
-  const { q, active, needsReview } = filters
-  const sorting: LegacyReactTable<AdminProduct>["state"]["sorting"] = sort
-    ? [
-        {
-          id: sort.split(",")[0],
-          desc: sort.endsWith(",desc"),
-        },
-      ]
-    : []
 
   useEffect(() => {
     setRowSelection((current) => (Object.keys(current).length ? {} : current))
-  }, [q, active, needsReview, page])
+  }, [filters.q, filters.needsReview, page, data?.content])
+
+  const rows = useMemo(() => {
+    const content = data?.content ?? []
+    return filters.needsReview ? content.filter(hasReviewIssues) : content
+  }, [data?.content, filters.needsReview])
 
   const columns = useMemo<LegacyColumnDef<AdminProduct>[]>(
     () => [
@@ -368,14 +297,33 @@ export function AdminProductsTable({
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label={`Seleccionar ${row.original.name}`}
+            aria-label={`Seleccionar ${row.original.sku}`}
           />
         ),
       },
       {
+        accessorKey: "sku",
+        header: () => (
+          <ColumnHeader
+            columnId="sku"
+            title="SKU"
+            sort={sort}
+            onSortChange={onSortChange}
+          />
+        ),
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">{row.original.sku}</span>
+        ),
+      },
+      {
         accessorKey: "name",
-        header: ({ column }) => (
-          <ColumnHeader column={column} title="Producto" />
+        header: () => (
+          <ColumnHeader
+            columnId="name"
+            title="Producto"
+            sort={sort}
+            onSortChange={onSortChange}
+          />
         ),
         cell: ({ row }) => (
           <div>
@@ -385,11 +333,8 @@ export function AdminProductsTable({
                 to="/admin/products/$id"
                 params={{ id: row.original.id }}
                 search={returnSearch}
-                title={row.original.name}
               >
-                {row.original.name.length > 30
-                  ? `${row.original.name.slice(0, 30)}…`
-                  : row.original.name}
+                {productTitle(row.original)}
               </Link>
               <ReviewBadge product={row.original} />
             </div>
@@ -401,134 +346,145 @@ export function AdminProductsTable({
       },
       {
         accessorKey: "brand",
-        header: ({ column }) => <ColumnHeader column={column} title="Marca" />,
-        cell: ({ row }) => row.original.brand ?? "Sin marca",
-      },
-      {
-        id: "price",
-        enableSorting: false,
-        header: "Precio",
-        cell: ({ row }) => <VariantPriceCell product={row.original} />,
-      },
-      {
-        id: "status",
-        enableSorting: false,
-        header: "Estado",
-        cell: ({ row }) => <VariantStatusCell product={row.original} />,
-      },
-      {
-        accessorKey: "createdAt",
-        header: ({ column }) => (
-          <ColumnHeader column={column} title="Creación" />
+        header: () => (
+          <ColumnHeader
+            columnId="brand"
+            title="Marca"
+            sort={sort}
+            onSortChange={onSortChange}
+          />
         ),
-        cell: ({ row }) => formatDate(row.original.createdAt),
+        cell: ({ row }) => row.original.brand ?? "—",
       },
       {
-        accessorKey: "updatedAt",
-        header: ({ column }) => (
-          <ColumnHeader column={column} title="Última edición" />
+        accessorKey: "price",
+        header: () => (
+          <ColumnHeader
+            columnId="price"
+            title="Precio"
+            sort={sort}
+            onSortChange={onSortChange}
+          />
         ),
-        cell: ({ row }) => formatDate(row.original.updatedAt),
+        cell: ({ row }) => formatCop(row.original.price),
       },
+      {
+        accessorKey: "stock",
+        header: () => (
+          <ColumnHeader
+            columnId="stock"
+            title="Stock"
+            sort={sort}
+            onSortChange={onSortChange}
+          />
+        ),
+        cell: ({ row }) => row.original.stock,
+      },
+      {
+        accessorKey: "status",
+        header: () => (
+          <StatusColumnHeader
+            statuses={statuses}
+            onStatusesChange={onStatusesChange}
+          />
+        ),
+        cell: ({ row }) => {
+          const product = row.original
+          const isOutOfStock = product.status === "ACTIVE" && product.stock <= 0
+          const label = isOutOfStock
+            ? "Agotado"
+            : statusLabels[product.status]
+          const colorClass = isOutOfStock
+            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+            : product.status === "ACTIVE"
+              ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
+              : product.status === "INACTIVE"
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+          return (
+            <span
+              className={`rounded-full px-2 py-1 text-xs font-medium ${colorClass}`}
+            >
+              {label}
+            </span>
+          )
+        },
+      },
+
       {
         id: "actions",
         enableSorting: false,
         enableHiding: false,
-        cell: ({ row }) => {
-          const hasActiveVariant = row.original.variants.some(
-            (variant) => variant.isActive,
-          )
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  className="size-8 p-0"
-                  variant="ghost"
-                  aria-label={`Acciones para ${row.original.name}`}
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="size-8 p-0"
+                variant="ghost"
+                aria-label={`Acciones para ${row.original.sku}`}
+              >
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/admin/products/$id"
+                  params={{ id: row.original.id }}
+                  search={returnSearch}
                 >
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/admin/products/$id"
-                    params={{ id: row.original.id }}
-                    search={returnSearch}
-                  >
-                    Editar producto
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={isUpdatingStatus}
-                  onClick={() =>
-                    requestStatus([row.original.id], !hasActiveVariant)
-                  }
-                >
-                  {isUpdatingStatus && (
-                    <LoaderCircle className="animate-spin" />
-                  )}
-                  {hasActiveVariant
-                    ? "Desactivar producto"
-                    : "Activar producto"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  disabled={isDeleting}
-                  onClick={() => requestDelete([row.original.id])}
-                >
-                  {isDeleting && <LoaderCircle className="animate-spin" />}
-                  Eliminar producto
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )
-        },
+                  Editar producto
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={isUpdatingStatus}
+                onClick={() => onBulkStatus([row.original.id], "ACTIVE")}
+              >
+                <Eye className="mr-2 size-4" />
+                Activar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isUpdatingStatus}
+                onClick={() => onBulkStatus([row.original.id], "INACTIVE")}
+              >
+                <EyeOff className="mr-2 size-4" />
+                Desactivar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isUpdatingStatus}
+                onClick={() => onBulkStatus([row.original.id], "HIDDEN")}
+              >
+                <EyeOff className="mr-2 size-4" />
+                Ocultar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
       },
     ],
-    [isDeleting, isUpdatingStatus],
+    [onSortChange, returnSearch, sort, onBulkStatus, isUpdatingStatus],
   )
 
-  const rows = data?.content ?? []
   const table = useLegacyTable({
     data: rows,
     columns,
     manualSorting: true,
-    state: { sorting, columnVisibility, rowSelection },
-    onSortingChange: (updater) => {
-      const nextSorting =
-        typeof updater === "function" ? updater(sorting) : updater
-      const next = nextSorting[0]
-      onSortChange({
-        field: next.id as AdminProductsSort["field"],
-        direction: next.desc ? "desc" : "asc",
-      })
-    },
+    state: { columnVisibility, rowSelection },
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,
     getRowId: (row) => row.id,
   })
-  const selectedRows = table.getFilteredSelectedRowModel().rows
 
+  const selectedRows = table.getFilteredSelectedRowModel().rows
   const totalElements = data?.totalElements ?? 0
   const totalPages = data?.totalPages ?? 0
-  const pageSize = data?.size ?? 20
+  const pageSize = data?.size ?? 100
   const firstVisible = totalElements === 0 ? 0 : page * pageSize + 1
-  const lastVisible = page * pageSize + rows.length
-  const hasActiveFilters =
-    q.trim() !== "" || active !== undefined || needsReview !== undefined
-  const pendingDeleteNames = (pendingDelete ?? [])
-    .map((id) => rows.find((row) => row.id === id)?.name)
-    .filter((name): name is string => Boolean(name))
-  const pendingDeleteCount = pendingDelete?.length ?? 0
-  const pendingStatusIds = pendingStatus?.ids ?? []
-  const pendingStatusActive = pendingStatus?.isActive ?? false
-  const pendingStatusNames = pendingStatusIds
-    .map((id) => rows.find((row) => row.id === id)?.name)
-    .filter((name): name is string => Boolean(name))
+  const lastVisible = page * pageSize + (data?.content.length ?? 0)
 
   return (
     <div className="mt-6 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5">
@@ -536,15 +492,15 @@ export function AdminProductsTable({
         <div className="relative w-full sm:max-w-sm">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar productos..."
-            value={q}
+            placeholder="Buscar por SKU, nombre o referencia..."
+            value={filters.q}
             onChange={(event) =>
               onFiltersChange({ ...filters, q: event.target.value })
             }
             className="pr-9 pl-9"
             aria-label="Buscar productos"
           />
-          {q && (
+          {filters.q && (
             <button
               type="button"
               onClick={() => onFiltersChange({ ...filters, q: "" })}
@@ -555,108 +511,65 @@ export function AdminProductsTable({
             </button>
           )}
         </div>
-        <Select
-          value={active ?? "all"}
-          onValueChange={(value) => {
-            const nextActive =
-              value === "true" || value === "false" ? value : undefined
-            onFiltersChange({ ...filters, active: nextActive })
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-44" aria-label="Filtrar estado">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="true">Visibles en tienda</SelectItem>
-            <SelectItem value="false">Ocultos</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={needsReview ?? "all"}
-          onValueChange={(value) => {
-            onFiltersChange({
-              ...filters,
-              needsReview: value === "true" ? "true" : undefined,
-            })
-          }}
-        >
-          <SelectTrigger
-            className="w-full sm:w-44"
-            aria-label="Filtrar por revisión"
-          >
-            <SelectValue placeholder="Revisión" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="true">Por revisar</SelectItem>
-          </SelectContent>
-        </Select>
+
         {selectedRows.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              disabled={isUpdatingStatus || isDeleting}
+              disabled={isUpdatingStatus}
               onClick={() =>
-                requestStatus(
+                onBulkStatus(
                   selectedRows.map((row) => row.original.id),
-                  false,
+                  "ACTIVE",
                 )
               }
             >
-              {isUpdatingStatus ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <EyeOff />
-              )}
-              {isUpdatingStatus
-                ? "Desactivando..."
-                : `Desactivar (${selectedRows.length})`}
+              {isUpdatingStatus && <LoaderCircle className="animate-spin" />}
+              Activar ({selectedRows.length})
             </Button>
             <Button
               variant="outline"
-              disabled={isUpdatingStatus || isDeleting}
+              disabled={isUpdatingStatus}
               onClick={() =>
-                requestStatus(
+                onBulkStatus(
                   selectedRows.map((row) => row.original.id),
-                  true,
+                  "INACTIVE",
                 )
               }
             >
-              {isUpdatingStatus ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <Eye />
-              )}
-              {isUpdatingStatus
-                ? "Activando..."
-                : `Activar (${selectedRows.length})`}
+              Desactivar ({selectedRows.length})
             </Button>
             <Button
-              variant="destructive"
-              disabled={isDeleting || isUpdatingStatus}
+              variant="outline"
+              disabled={isUpdatingStatus}
               onClick={() =>
-                requestDelete(selectedRows.map((row) => row.original.id))
+                onBulkStatus(
+                  selectedRows.map((row) => row.original.id),
+                  "HIDDEN",
+                )
               }
             >
-              {isDeleting && <LoaderCircle className="animate-spin" />}
-              {isDeleting
-                ? "Eliminando..."
-                : `Eliminar (${selectedRows.length})`}
+              Ocultar ({selectedRows.length})
             </Button>
           </div>
         )}
-        <Collapsible className="contents">
-          <CollapsibleTrigger asChild>
-            <Button className="group" variant="outline">
-              Filtros
-              <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="order-last w-full basis-full pt-4 sm:rounded-2xl sm:border sm:bg-card sm:p-4 sm:shadow-lg">
-            {filtersContent}
-          </CollapsibleContent>
-        </Collapsible>
+
+        {filtersContent ? (
+          <Collapsible className="contents">
+            <CollapsibleTrigger asChild>
+              <Button className="group" variant="outline">
+                Filtros
+                <ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="overflow-hidden order-last w-full basis-full data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
+              <div className="pt-4 sm:rounded-2xl sm:border sm:bg-card sm:p-4 sm:shadow-lg">
+                {filtersContent}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="sm:ml-auto" variant="outline">
@@ -679,6 +592,7 @@ export function AdminProductsTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
       <div
         className="mt-3 overflow-hidden rounded-2xl border transition-opacity data-[placeholder=true]:opacity-60"
         data-placeholder={isPlaceholderData || undefined}
@@ -730,40 +644,25 @@ export function AdminProductsTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-muted-foreground"
                 >
-                  <div className="flex flex-col items-center gap-3">
-                    <p className="text-muted-foreground">
-                      No hay productos para este filtro.
-                    </p>
-                    {hasActiveFilters && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          onFiltersChange({
-                            q: "",
-                            active: undefined,
-                            needsReview: undefined,
-                          })
-                        }
-                      >
-                        Limpiar filtros
-                      </Button>
-                    )}
-                  </div>
+                  No hay productos para este filtro.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
       <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
           {data && (
             <p>
-              Mostrando {firstVisible}–{lastVisible} de {totalElements}{" "}
-              productos
+              Mostrando {firstVisible}–{Math.min(lastVisible, totalElements)} de{" "}
+              {totalElements} productos
+              {filters.needsReview
+                ? ` (${rows.length} con pendientes en esta página)`
+                : ""}
             </p>
           )}
           {selectedRows.length > 0 && (
@@ -828,78 +727,6 @@ export function AdminProductsTable({
           </Pagination>
         )}
       </div>
-      <PermanentDeleteDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
-        isPending={isDeleting}
-        confirmDisabled={!pendingDelete}
-        onConfirm={() => {
-          if (!pendingDelete) return
-          onDelete(pendingDelete)
-          setRowSelection({})
-          setPendingDelete(null)
-        }}
-        title={
-          pendingDeleteCount > 1
-            ? `¿Eliminar ${pendingDeleteCount} productos?`
-            : `¿Eliminar el producto “${pendingDeleteNames[0] ?? ""}”?`
-        }
-        description={`Los productos se eliminarán permanentemente del catálogo junto con sus variantes. Sus imágenes quedarán disponibles en la galería. Esta acción no se puede deshacer.${pendingDeleteNames.length > 1 ? ` Productos: ${pendingDeleteNames.slice(0, 3).join(", ")}${pendingDeleteNames.length > 3 ? ` y ${pendingDeleteNames.length - 3} más` : ""}.` : ""}`}
-      />
-      <AlertDialog
-        open={pendingStatus !== null}
-        onOpenChange={(open) => !open && setPendingStatus(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingStatusIds.length > 1
-                ? pendingStatusActive
-                  ? `¿Activar ${pendingStatusIds.length} productos?`
-                  : `¿Desactivar ${pendingStatusIds.length} productos?`
-                : pendingStatusActive
-                  ? `¿Activar el producto “${pendingStatusNames[0] ?? ""}”?`
-                  : `¿Desactivar el producto “${pendingStatusNames[0] ?? ""}”?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingStatusActive
-                ? "Se activarán todas las variantes de los productos seleccionados y volverán a ser visibles en la tienda."
-                : "Se desactivarán todas las variantes de los productos seleccionados y dejarán de ser visibles en la tienda. Los productos no se eliminarán."}
-              {pendingStatusNames.length > 1 && (
-                <>
-                  {" "}
-                  Productos: {pendingStatusNames.slice(0, 3).join(", ")}
-                  {pendingStatusNames.length > 3 &&
-                    ` y ${pendingStatusNames.length - 3} más`}
-                  .
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isUpdatingStatus}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isUpdatingStatus || !pendingStatus}
-              onClick={() => {
-                if (!pendingStatus) return
-                onBulkStatus(pendingStatus.ids, pendingStatus.isActive)
-                setRowSelection({})
-                setPendingStatus(null)
-              }}
-            >
-              {isUpdatingStatus
-                ? pendingStatusActive
-                  ? "Activando..."
-                  : "Desactivando..."
-                : pendingStatusActive
-                  ? "Activar"
-                  : "Desactivar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

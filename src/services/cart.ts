@@ -1,11 +1,10 @@
 import { fetchProductById } from "#/services/products"
+import { productTitle } from "#/components/catalog/types"
 import type { ProductDetail } from "#/components/product-detail/types"
 
 export type CartItem = {
   productId: string
   quantity: number
-  variantId?: string
-  variantName?: string
   productName?: string
   imageUrl?: string
   unitPrice?: number
@@ -13,8 +12,6 @@ export type CartItem = {
 
 export type CartLine = {
   productId: string
-  variantId?: string
-  variantName?: string
   name: string
   imageUrl: string
   unitPrice: number
@@ -30,170 +27,107 @@ export type Cart = {
   subtotal: number
 }
 
-export function cartLineKey(productId: string, variantId?: string): string {
-  return `${productId}:${variantId ?? "base"}`
+/** Un SKU es un producto: la clave de línea es el productId. */
+export function cartLineKey(productId: string): string {
+  return productId
 }
 
-const MOCK_CART_KEY = "mock_cart"
+const CART_KEY = "mock_cart"
 const CART_ID = "cart"
 
-type PersistedLine = CartItem
-
-function isPersistedLine(value: unknown): value is PersistedLine {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    typeof (value as PersistedLine).productId === "string" &&
-    typeof (value as PersistedLine).quantity === "number"
-  )
-}
-
-function readPersistedCart(): PersistedLine[] {
-  const stored = localStorage.getItem(MOCK_CART_KEY)
+function readPersistedCart(): CartItem[] {
+  const stored = localStorage.getItem(CART_KEY)
   if (!stored) return []
   try {
     const parsed: unknown = JSON.parse(stored)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isPersistedLine)
+    return parsed.filter((value): value is CartItem => {
+      if (value === null || typeof value !== "object") return false
+      const line = value as CartItem
+      return (
+        typeof line.productId === "string" && typeof line.quantity === "number"
+      )
+    })
   } catch {
     return []
   }
 }
 
-function writePersistedCart(lines: PersistedLine[]): void {
-  localStorage.setItem(MOCK_CART_KEY, JSON.stringify(lines))
-}
-
-function sameColor(left?: string, right?: string | null): boolean {
-  return Boolean(
-    left && right && left.trim().toLowerCase() === right.trim().toLowerCase(),
-  )
+function writePersistedCart(lines: CartItem[]): void {
+  localStorage.setItem(CART_KEY, JSON.stringify(lines))
 }
 
 function resolveLines(
-  persisted: PersistedLine[],
-  // Indexado por línea (productId:variantId): el detalle de cada variante
-  // trae su propia imagen principal y no se puede compartir por producto.
+  persisted: CartItem[],
   details: Map<string, ProductDetail>,
 ): { lines: CartLine[]; unavailableItems: CartLine[] } {
   const lines: CartLine[] = []
   const unavailableItems: CartLine[] = []
+
   for (const line of persisted) {
-    const product = details.get(cartLineKey(line.productId, line.variantId))
+    const product = details.get(line.productId)
     const quantity = line.quantity
-    const productName =
-      product?.name ?? line.productName ?? "Producto no disponible"
-    const variants = product?.variants ?? []
-    const matchingVariant = line.variantId
-      ? variants.find(
-          (variant) =>
-            variant.id === line.variantId ||
-            sameColor(line.variantName, variant.color),
-        )
-      : undefined
-    const hasAvailableVariant = variants.some(
-      (variant) => variant.id !== null && variant.isActive !== false,
-    )
-    const variantUnavailable =
-      product !== undefined &&
-      (!line.variantId ||
-        !matchingVariant ||
-        matchingVariant.isActive === false)
-    const color = matchingVariant?.color ?? line.variantName
-    // Precio vivo de la variante (con descuento); el guardado es respaldo.
-    const unitPrice =
-      matchingVariant?.discountedPrice ?? line.unitPrice ?? product?.price ?? 0
-    const cartLine = {
-      productId: product?.productId ?? line.productId,
-      variantId: matchingVariant?.id ?? line.variantId,
-      variantName: color ?? undefined,
-      name: color ? `${productName} - ${color}` : productName,
-      imageUrl: product?.imageUrl ?? line.imageUrl ?? "",
+    const name = product
+      ? productTitle(product)
+      : (line.productName ?? "Producto no disponible")
+    const imageUrl = product?.imageUrl ?? line.imageUrl ?? ""
+    // Precio vivo de Softix; el precio guardado es solo respaldo.
+    const unitPrice = product?.price ?? line.unitPrice ?? 0
+    const base = {
+      productId: line.productId,
+      name,
+      imageUrl,
       unitPrice,
       quantity,
       lineTotal: unitPrice * quantity,
     }
-    if (product && !variantUnavailable) {
-      lines.push(cartLine)
-    } else {
+
+    if (!product) {
       unavailableItems.push({
-        ...cartLine,
-        productId: line.productId,
-        name: productName,
-        imageUrl: product?.imageUrl ?? line.imageUrl ?? "",
+        ...base,
         unitPrice: line.unitPrice ?? 0,
         lineTotal: 0,
-        unavailableReason: variantUnavailable
-          ? hasAvailableVariant
-            ? "La variante seleccionada ya no está disponible"
-            : "El producto no tiene variantes disponibles"
-          : undefined,
+        unavailableReason: "No se pudo comprobar la disponibilidad",
       })
+    } else if (!product.available || quantity > product.stock) {
+      unavailableItems.push({
+        ...base,
+        lineTotal: 0,
+        unavailableReason: product.available
+          ? "El stock disponible cambió"
+          : "Agotado",
+      })
+    } else {
+      lines.push(base)
     }
   }
+
   return { lines, unavailableItems }
 }
 
-function computeSubtotal(lines: CartLine[]): number {
-  return lines.reduce((sum, line) => sum + line.lineTotal, 0)
-}
-
-async function buildCart(persisted: PersistedLine[]): Promise<Cart> {
+async function buildCart(persisted: CartItem[]): Promise<Cart> {
   if (persisted.length === 0) {
     return { id: CART_ID, items: [], unavailableItems: [], subtotal: 0 }
   }
-  const keys = [
-    ...new Set(
-      persisted.map((line) => cartLineKey(line.productId, line.variantId)),
-    ),
-  ]
+
+  const ids = [...new Set(persisted.map((line) => line.productId))]
   const entries = await Promise.all(
-    keys.map(async (key) => {
-      const line = persisted.find(
-        (candidate) =>
-          cartLineKey(candidate.productId, candidate.variantId) === key,
-      )!
-      const detail = await fetchProductById(
-        line.productId,
-        line.variantId,
-      ).catch(() => null)
-      return [key, detail] as const
+    ids.map(async (id) => {
+      const detail = await fetchProductById(id).catch(() => null)
+      return [id, detail] as const
     }),
   )
   const details = new Map<string, ProductDetail>()
-  for (const [key, detail] of entries) {
-    if (detail) details.set(key, detail)
+  for (const [id, detail] of entries) {
+    if (detail) details.set(id, detail)
   }
-  const rebound = persisted.map((line) => {
-    const product = details.get(cartLineKey(line.productId, line.variantId))
-    const matchingVariant = line.variantId
-      ? product?.variants.find((variant) =>
-          sameColor(line.variantName, variant.color),
-        )
-      : undefined
-    if (!matchingVariant) return line
-    const nextVariantName = matchingVariant.color ?? line.variantName
-    if (
-      matchingVariant.id === line.variantId &&
-      nextVariantName === line.variantName
-    ) {
-      return line
-    }
-    return {
-      ...line,
-      variantId: matchingVariant.id ?? line.variantId,
-      variantName: nextVariantName ?? undefined,
-    }
-  })
-  if (rebound.some((line, index) => line !== persisted[index])) {
-    writePersistedCart(rebound)
-  }
-  const { lines, unavailableItems } = resolveLines(rebound, details)
+
+  const { lines, unavailableItems } = resolveLines(persisted, details)
   return {
     id: CART_ID,
     items: lines,
     unavailableItems,
-    subtotal: computeSubtotal(lines),
+    subtotal: lines.reduce((sum, line) => sum + line.lineTotal, 0),
   }
 }
 
@@ -204,7 +138,7 @@ export async function fetchCart(): Promise<Cart> {
 export async function addToCart(
   productId: string,
   quantity: number,
-  variant: {
+  product: {
     id: string
     name: string
     productName: string
@@ -214,21 +148,16 @@ export async function addToCart(
   productName?: string,
 ): Promise<Cart> {
   const lines = readPersistedCart()
-  const key = cartLineKey(productId, variant.id)
-  const existing = lines.find(
-    (line) => cartLineKey(line.productId, line.variantId) === key,
-  )
+  const existing = lines.find((line) => line.productId === productId)
   if (existing) {
     existing.quantity += quantity
   } else {
     lines.push({
       productId,
       quantity,
-      variantId: variant.id,
-      variantName: variant.name,
-      productName: productName ?? variant.productName,
-      imageUrl: variant.imageUrl ?? undefined,
-      unitPrice: variant.price,
+      productName: productName ?? product.productName,
+      imageUrl: product.imageUrl ?? undefined,
+      unitPrice: product.price,
     })
   }
   writePersistedCart(lines)
@@ -238,21 +167,14 @@ export async function addToCart(
 export async function updateQuantity(
   productId: string,
   quantity: number,
-  variantId?: string,
 ): Promise<Cart> {
   const lines = readPersistedCart()
   if (quantity < 1) {
-    const key = cartLineKey(productId, variantId)
-    const filtered = lines.filter(
-      (line) => cartLineKey(line.productId, line.variantId) !== key,
-    )
+    const filtered = lines.filter((line) => line.productId !== productId)
     writePersistedCart(filtered)
     return buildCart(filtered)
   }
-  const key = cartLineKey(productId, variantId)
-  const existing = lines.find(
-    (line) => cartLineKey(line.productId, line.variantId) === key,
-  )
+  const existing = lines.find((line) => line.productId === productId)
   if (existing) {
     existing.quantity = quantity
   } else {
@@ -262,15 +184,9 @@ export async function updateQuantity(
   return buildCart(lines)
 }
 
-export async function removeFromCart(
-  productId: string,
-  variantId?: string,
-): Promise<Cart> {
+export async function removeFromCart(productId: string): Promise<Cart> {
   const lines = readPersistedCart()
-  const key = cartLineKey(productId, variantId)
-  const filtered = lines.filter(
-    (line) => cartLineKey(line.productId, line.variantId) !== key,
-  )
+  const filtered = lines.filter((line) => line.productId !== productId)
   writePersistedCart(filtered)
   return buildCart(filtered)
 }

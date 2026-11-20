@@ -23,7 +23,7 @@ type Filter = "all" | "used" | "unused"
 const GALLERY_QUERY_KEY = ["admin", "media", "gallery"]
 
 const folderLabels = {
-  variants: "Variantes",
+  products: "Productos",
   brands: "Marcas",
   categories: "Categorías",
   hero: "Hero",
@@ -33,7 +33,6 @@ const referenceLabels = {
   brand: "Marca",
   category: "Categoría",
   product: "Producto",
-  variant: "Variante",
   hero: "Hero",
 } as const
 
@@ -90,7 +89,7 @@ export function AdminGalleryPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap gap-2">
-            {(["all", "variants", "brands", "categories", "hero"] as const).map(
+            {(["all", "products", "brands", "categories", "hero"] as const).map(
               (option) => (
                 <Button
                   key={option}

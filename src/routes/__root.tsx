@@ -9,7 +9,6 @@ import { ThemeProvider } from "#/components/theme-provider"
 import { TooltipProvider } from "#/components/ui/tooltip"
 import { Toaster } from "#/components/ui/toaster"
 import { AuthProvider } from "#/components/auth-provider"
-import { ImportWizardProvider } from "#/components/admin/import/import-store"
 import { NotFoundPage } from "#/components/not-found-page"
 import { queryClient } from "#/lib/query-client"
 
@@ -27,25 +26,23 @@ function RootComponent() {
     <>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ImportWizardProvider>
-            <ThemeProvider defaultTheme="system">
-              <TooltipProvider>
-                <Outlet />
-                <Toaster />
-                <TanStackDevtools
-                  config={{
-                    position: "bottom-right",
-                  }}
-                  plugins={[
-                    {
-                      name: "TanStack Router",
-                      render: <TanStackRouterDevtoolsPanel />,
-                    },
-                  ]}
-                />
-              </TooltipProvider>
-            </ThemeProvider>
-          </ImportWizardProvider>
+          <ThemeProvider defaultTheme="system">
+            <TooltipProvider>
+              <Outlet />
+              <Toaster />
+              <TanStackDevtools
+                config={{
+                  position: "bottom-right",
+                }}
+                plugins={[
+                  {
+                    name: "TanStack Router",
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+            </TooltipProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </>

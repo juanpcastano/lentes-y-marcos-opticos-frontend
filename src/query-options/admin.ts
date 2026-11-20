@@ -7,6 +7,7 @@ import {
   listAdminHeroSlides,
   listAdminProducts,
 } from "#/services/admin"
+import type { ProductStatus } from "#/services/admin"
 
 export const ADMIN_PRODUCTS_QUERY_KEY = ["admin", "products"] as const
 export const ADMIN_CATEGORIES_QUERY_KEY = ["admin", "categories"] as const
@@ -20,12 +21,9 @@ export function createAdminProductsQueryOptions(params?: {
   materials?: string[]
   shapes?: string[]
   colors?: string[]
+  statuses?: ProductStatus[]
   priceMin?: number
   priceMax?: number
-  onSale?: boolean
-  isNew?: boolean
-  active?: string
-  needsReview?: string
   page?: number
   sort?: string
 }) {
@@ -45,7 +43,7 @@ export function createAdminProductQueryOptions(id: string) {
 
 export function createAdminProductFacetsQueryOptions() {
   return queryOptions({
-    queryKey: [...ADMIN_PRODUCTS_QUERY_KEY, "facets"],
+    queryKey: ["products", "facets"],
     queryFn: fetchAdminProductFacets,
   })
 }

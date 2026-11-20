@@ -17,7 +17,6 @@ import { Input } from "#/components/ui/input"
 import { Label } from "#/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group"
 import { toast } from "#/hooks/use-toast"
-import type { Address } from "#/services/addresses"
 
 export const Route = createFileRoute("/_main-layout/_authenticated/checkout")({
   component: RouteComponent,
@@ -145,7 +144,6 @@ function RouteComponent() {
 
   if (!cart || !addresses || !shippingDates) return null
 
-  const selectedAddr = addresses.find((a) => a.id === selectedAddressId)
   const daysAway = selectedDate
     ? Math.ceil(
         (new Date(selectedDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
@@ -321,7 +319,7 @@ function RouteComponent() {
           <CardContent className="flex flex-col gap-2">
             {cart.items.map((item) => (
               <div
-                key={cartLineKey(item.productId, item.variantId)}
+                key={cartLineKey(item.productId)}
                 className="flex justify-between text-sm"
               >
                 <span className="text-muted-foreground">

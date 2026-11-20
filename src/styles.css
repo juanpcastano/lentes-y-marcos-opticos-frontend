@@ -23,6 +23,24 @@ body {
   margin: 0;
 }
 
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
 /* react-remove-scroll (Radix Select/Dialog/Sheet) adds margin-right and
    padding-right to body[data-scroll-locked] to compensate the disappearing
    scrollbar. With scrollbar-gutter: stable on html the gutter is already
@@ -36,6 +54,8 @@ html body[data-scroll-locked] {
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Inter Variable", sans-serif;
+  --animate-collapsible-down: collapsible-down 0.2s ease-out;
+  --animate-collapsible-up: collapsible-up 0.2s ease-out;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

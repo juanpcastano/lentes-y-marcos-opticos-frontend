@@ -18,7 +18,7 @@ export interface ProductsParams {
   colors?: string[]
   priceMin?: number
   priceMax?: number
-  onSale?: boolean
+  includeOutOfStock?: boolean
   isNew?: boolean
   q?: string
   sort?: "relevance" | "price-asc" | "price-desc"
@@ -27,6 +27,8 @@ export interface ProductsParams {
 }
 
 export interface ProductFacets {
+  brands: string[]
+  categories: string[]
   materials: string[]
   shapes: string[]
   colors: string[]
@@ -59,7 +61,7 @@ export async function fetchProducts(
     search.set("priceMin", String(params.priceMin))
   if (params.priceMax !== undefined)
     search.set("priceMax", String(params.priceMax))
-  if (params.onSale) search.set("onSale", "true")
+  if (params.includeOutOfStock) search.set("includeOutOfStock", "true")
   if (params.isNew) search.set("isNew", "true")
   if (params.q?.trim()) search.set("q", params.q.trim())
   if (params.sort !== undefined) search.set("sort", params.sort)
@@ -69,14 +71,8 @@ export async function fetchProducts(
   return api.get<ProductPage>(`/products?${search.toString()}`)
 }
 
-export async function fetchProductById(
-  id: string,
-  variantId?: string,
-): Promise<ProductDetail> {
-  const search = new URLSearchParams()
-  if (variantId) search.set("variant", variantId)
-  const query = search.toString()
-  return api.get<ProductDetail>(`/products/${id}${query ? `?${query}` : ""}`)
+export async function fetchProductById(id: string): Promise<ProductDetail> {
+  return api.get<ProductDetail>(`/products/${id}`)
 }
 
 export async function fetchProductFacets(): Promise<ProductFacets> {

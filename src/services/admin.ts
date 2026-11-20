@@ -8,30 +8,38 @@ export interface AdminImage {
   sortOrder: number | null
 }
 
-export interface AdminVariant {
-  id: string | null
-  color: string | null
-  sku: string | null
-  price: number | null
-  discountPercentage: number | null
-  discountedPrice: number | null
-  isActive: boolean
-  images: AdminImage[]
-}
+export type ProductStatus = "ACTIVE" | "INACTIVE" | "HIDDEN"
 
+/**
+ * Un SKU de Softix es un producto. Todos los datos que vienen de Softix son de
+ * solo lectura; solo se editan estado, material, forma y descripción.
+ */
 export interface AdminProduct {
   id: string
+  sku: string
   name: string
-  brandId: string | null
   brand: string | null
+  reference: string | null
+  color: string | null
+  categories: string[]
+  price: number
+  saleVat: boolean
+  stock: number
+  status: ProductStatus
+  softixMissing: boolean
+  syncedAt: string | null
   material: string | null
   shape: string | null
   description: string | null
-  productType: string
-  categories: string[]
-  variants: AdminVariant[]
-  createdAt: string
-  updatedAt: string
+  imageUrl: string | null
+  images: AdminImage[]
+}
+
+export interface AdminProductUpdate {
+  status?: ProductStatus
+  material?: string
+  shape?: string
+  description?: string
 }
 
 export interface PageResponse<T> {
@@ -40,37 +48,6 @@ export interface PageResponse<T> {
   size: number
   totalElements: number
   totalPages: number
-}
-
-export interface AdminProductInput {
-  name: string
-  brandId: string | null
-  material: string
-  shape: string
-  description: string
-  productType: string
-  categories: string[]
-  variants: AdminVariantInput[]
-}
-
-export interface AdminStagedImage {
-  imageUrl: string
-}
-
-export interface AdminVariantInput {
-  id?: string | null
-  color: string
-  sku: string
-  price: number
-  discountPercentage: number | null
-  isActive: boolean
-  /**
-   * URLs ya subidas a `variants/` (staging sin referencias). Solo aplican a
-   * variantes nuevas (sin id): al guardar se crean las VariantImage en ese
-   * orden (la primera es la principal). En variantes existentes se ignoran
-   * (sus imágenes se gestionan por endpoints dedicados).
-   */
-  images: AdminStagedImage[]
 }
 
 export interface AdminCategory {
@@ -124,7 +101,7 @@ export interface AdminHeroSlideInput {
   isActive?: boolean
 }
 
-export type AdminMediaFolder = "categories" | "brands" | "variants" | "hero"
+export type AdminMediaFolder = "categories" | "brands" | "products" | "hero"
 
 export interface AdminMediaImage {
   key: string
@@ -132,14 +109,21 @@ export interface AdminMediaImage {
 }
 
 export interface AdminMediaReference {
-  type: "brand" | "category" | "product" | "variant" | "hero"
+  type: "brand" | "category" | "product" | "hero"
   id: string
   name: string
 }
 
 export interface AdminMediaAsset extends AdminMediaImage {
-  folder: "variants" | "brands" | "categories" | "hero"
+  folder: "products" | "brands" | "categories" | "hero"
   references: AdminMediaReference[]
+}
+
+export interface SyncResult {
+  created: number
+  updated: number
+  hidden: number
+  skipped: number
 }
 
 export async function listAdminProducts(params?: {
@@ -148,13 +132,10 @@ export async function listAdminProducts(params?: {
   categories?: string[]
   materials?: string[]
   shapes?: string[]
+  colors?: string[]
+  statuses?: ProductStatus[]
   priceMin?: number
   priceMax?: number
-  onSale?: boolean
-  isNew?: boolean
-  active?: string
-  needsReview?: string
-  colors?: string[]
   page?: number
   sort?: string
 }): Promise<PageResponse<AdminProduct>> {
@@ -167,14 +148,11 @@ export async function listAdminProducts(params?: {
     query.append("materials", material)
   for (const shape of params?.shapes ?? []) query.append("shapes", shape)
   for (const color of params?.colors ?? []) query.append("colors", color)
+  for (const status of params?.statuses ?? []) query.append("statuses", status)
   if (params?.priceMin !== undefined)
     query.set("priceMin", String(params.priceMin))
   if (params?.priceMax !== undefined)
     query.set("priceMax", String(params.priceMax))
-  if (params?.onSale) query.set("onSale", "true")
-  if (params?.isNew) query.set("isNew", "true")
-  if (params?.active) query.set("active", params.active)
-  if (params?.needsReview) query.set("needsReview", params.needsReview)
   if (params?.sort) query.set("sort", params.sort)
   query.set("page", String(params?.page ?? 0))
   query.set("size", "100")
@@ -186,36 +164,26 @@ export function getAdminProduct(id: string) {
 }
 
 export function fetchAdminProductFacets() {
-  return api.get<ProductFacets>("/admin/products/facets")
+  return api.get<ProductFacets>("/products/facets")
 }
 
-export function createAdminProduct(input: AdminProductInput) {
-  return api.post<AdminProduct>("/admin/products", input)
-}
-
-export function updateAdminProduct(id: string, input: AdminProductInput) {
+export function updateAdminProduct(id: string, input: AdminProductUpdate) {
   return api.put<AdminProduct>(`/admin/products/${id}`, input)
 }
 
-export function deleteAdminProduct(id: string) {
-  return api.delete<void>(`/admin/products/${id}`)
+export function bulkSetProductsStatus(ids: string[], status: ProductStatus) {
+  return api.put<{ updated: number; status: ProductStatus }>(
+    "/admin/products/bulk-status",
+    { ids, status },
+  )
 }
 
-export interface BulkProductStatusResult {
-  updatedProducts: number
-  updatedVariants: number
-  isActive: boolean
+export function syncSoftixCatalog() {
+  return api.post<SyncResult>("/admin/softix/sync")
 }
 
-export function bulkSetProductsStatus(ids: string[], isActive: boolean) {
-  return api.put<BulkProductStatusResult>("/admin/products/bulk-status", {
-    ids,
-    isActive,
-  })
-}
-
-export function uploadVariantImage(
-  variantId: string,
+export function uploadProductImage(
+  productId: string,
   file: File,
   primary: boolean,
   onProgress?: (percent: number) => void,
@@ -223,7 +191,7 @@ export function uploadVariantImage(
   const body = new FormData()
   body.append("file", file)
   body.append("primary", String(primary))
-  return api.post<AdminImage>(`/admin/variants/${variantId}/images`, body, {
+  return api.post<AdminImage>(`/admin/products/${productId}/images`, body, {
     onUploadProgress: (event) => {
       if (event.total)
         onProgress?.(Math.round((event.loaded / event.total) * 100))
@@ -231,19 +199,30 @@ export function uploadVariantImage(
   })
 }
 
-export function deleteVariantImage(variantId: string, imageId: string) {
-  return api.delete<void>(`/admin/variants/${variantId}/images/${imageId}`)
+export function attachExistingProductImage(
+  productId: string,
+  imageUrl: string,
+  primary: boolean,
+) {
+  return api.post<AdminImage>(`/admin/products/${productId}/images/existing`, {
+    imageUrl,
+    primary,
+  })
 }
 
-export function setVariantPrimaryImage(variantId: string, imageId: string) {
+export function deleteProductImage(productId: string, imageId: string) {
+  return api.delete<void>(`/admin/products/${productId}/images/${imageId}`)
+}
+
+export function setProductPrimaryImage(productId: string, imageId: string) {
   return api.put<AdminImage>(
-    `/admin/variants/${variantId}/images/${imageId}/primary`,
+    `/admin/products/${productId}/images/${imageId}/primary`,
   )
 }
 
-export function reorderVariantImages(variantId: string, imageIds: string[]) {
+export function reorderProductImages(productId: string, imageIds: string[]) {
   return api.put<AdminImage[]>(
-    `/admin/variants/${variantId}/images/order`,
+    `/admin/products/${productId}/images/order`,
     imageIds,
   )
 }
@@ -319,17 +298,6 @@ export function uploadAdminMedia(
   })
 }
 
-export function attachExistingVariantImage(
-  variantId: string,
-  imageUrl: string,
-  primary: boolean,
-) {
-  return api.post<AdminImage>(`/admin/variants/${variantId}/images/existing`, {
-    imageUrl,
-    primary,
-  })
-}
-
 export function listAdminGallery() {
   return api.get<AdminMediaAsset[]>("/admin/media/gallery")
 }
@@ -339,178 +307,8 @@ export function deleteAdminMedia(key: string, force: boolean) {
   return api.delete<void>(`/admin/media/gallery?${params}`)
 }
 
-export type InventoryRowStatus =
-  "NUEVO" | "ACTUALIZAR" | "SIN_CAMBIOS" | "CONFLICTO" | "ERROR"
-
-export type InventorySuggestedAction =
-  "CREATE" | "UPDATE" | "NONE" | "DECIDE" | "SKIP"
-
-export type InventoryDecision = "REPLACE" | "UPDATE" | "DISCARD" | "CREATE"
-
-export interface InventoryExistingSnapshot {
-  name: string
-  basePrice: number
-  brand: string | null
-  categories: string[]
-  productType: string | null
-  productId: string | null
-}
-
-export interface InventoryPreviewRow {
-  rowKey: string
-  sheet: string
-  rowNumber: number
-  sku: string
-  name: string | null
-  brand: string | null
-  categories: string[]
-  productType: string | null
-  basePrice: number | null
-  status: InventoryRowStatus
-  detail: string | null
-  existing: InventoryExistingSnapshot | null
-  suggestedAction: InventorySuggestedAction
-  productName: string | null
-  color: string | null
-  needsColorReview: boolean
-  groupKey: string | null
-}
-
-export interface InventoryPreviewSummary {
-  total: number
-  nuevos: number
-  actualizar: number
-  sinCambios: number
-  conflictos: number
-  errores: number
-}
-
-export interface InventoryBrandCandidate {
-  rawName: string
-  count: number
-  suggestedBrandId: string | null
-  suggestedBrandName: string | null
-}
-
-export interface InventoryCategoryCandidate {
-  rawName: string
-  count: number
-  suggestedCategoryId: string | null
-  suggestedCategoryName: string | null
-}
-
-export interface InventoryExistingBrand {
-  id: string
-  name: string
-}
-
-export interface InventoryExistingCategory {
-  id: string
-  name: string
-}
-
-export interface InventoryPreview {
-  rows: InventoryPreviewRow[]
-  summary: InventoryPreviewSummary
-  brands: InventoryBrandCandidate[]
-  categories: InventoryCategoryCandidate[]
-  existingBrands: InventoryExistingBrand[]
-  existingCategories: InventoryExistingCategory[]
-}
-
-export interface InventoryConfirmResult {
-  created: number
-  updated: number
-  discarded: number
-  unchanged: number
-  skipped: string[]
-}
-
-export function previewInventory(
-  file: File,
-  onProgress?: (percent: number) => void,
-  signal?: AbortSignal,
-) {
-  const body = new FormData()
-  body.append("file", file)
-  return api.post<InventoryPreview>("/admin/inventory/preview", body, {
-    signal,
-    onUploadProgress: (event) => {
-      if (event.total)
-        onProgress?.(Math.round((event.loaded / event.total) * 100))
-    },
-  })
-}
-
-export function confirmInventory(
-  file: File,
-  decisions: Record<string, InventoryDecision>,
-  onProgress?: (percent: number) => void,
-) {
-  const body = new FormData()
-  body.append("file", file)
-  body.append(
-    "decisions",
-    new Blob([JSON.stringify(decisions)], { type: "application/json" }),
-  )
-  return api.post<InventoryConfirmResult>("/admin/inventory/confirm", body, {
-    onUploadProgress: (event) => {
-      if (event.total)
-        onProgress?.(Math.round((event.loaded / event.total) * 100))
-    },
-  })
-}
-
-export type ImportPlanBrandAction = "MAP" | "CREATE" | "OMIT"
-export type ImportPlanCategoryAction = "MAP" | "CREATE" | "OMIT"
-export type ImportPlanVariantMode = "CREATE" | "UPDATE" | "REPLACE" | "DISCARD"
-
-export interface ImportPlanBrand {
-  rawName: string
-  action: ImportPlanBrandAction
-  brandId: string | null
-  finalName: string | null
-}
-
-export interface ImportPlanCategory {
-  rawName: string
-  action: ImportPlanCategoryAction
-  categoryId: string | null
-  finalName: string | null
-}
-
-export interface ImportPlanVariant {
-  sku: string
-  color: string
-  price: number
-  mode: ImportPlanVariantMode
-}
-
-export interface ImportPlanProduct {
-  existingProductId: string | null
-  name: string
-  brandRaw: string
-  categoryRaws: string[]
-  productType: string | null
-  variants: ImportPlanVariant[]
-}
-
-export interface ImportPlanRequest {
-  brands: ImportPlanBrand[]
-  categories: ImportPlanCategory[]
-  products: ImportPlanProduct[]
-}
-
-export function confirmImportPlan(plan: ImportPlanRequest) {
-  return api.post<InventoryConfirmResult>("/admin/inventory/confirm-plan", plan)
-}
-
 /**
- * Mensaje legible para errores del panel admin. Traduce los estados
- * que requieren una acción del usuario (sesión, permisos, storage)
- * y conserva el mensaje del backend para el resto (409, 400, ...).
- * Si el backend envía detalles por campo (validación), se anexan para
- * no tener que abrir la consola.
+ * Mensaje legible para errores del panel admin.
  */
 export function adminErrorMessage(
   error: unknown,

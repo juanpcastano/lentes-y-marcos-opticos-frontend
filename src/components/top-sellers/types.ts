@@ -1,6 +1,5 @@
 export interface TopProduct {
-  variantId: string
-  productId: string
+  id: string
   imageUrl: string
   name: string
   color: string

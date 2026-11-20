@@ -1,22 +1,19 @@
 import type { CatalogProduct } from "#/components/catalog/types"
 
+export type ProductStatus = "ACTIVE" | "INACTIVE" | "HIDDEN"
+
 export interface ProductDetail extends CatalogProduct {
-  variantId: string
+  sku: string
+  available: boolean
+  status: ProductStatus
   additionalImages: string[]
-  originalPrice: number
-  discountedPrice: number
-  discountPercentage: number
-  description: string
-  variants: ProductVariant[]
-  selectedVariant: ProductVariant | null
+  description: string | null
+  otherColors: OtherColor[]
 }
 
-export interface ProductVariant {
-  id: string | null
+export interface OtherColor {
+  id: string
   color: string | null
-  sku: string | null
-  price: number | null
-  discountPercentage: number | null
-  discountedPrice: number | null
-  isActive: boolean | null
+  imageUrl: string | null
+  available: boolean
 }

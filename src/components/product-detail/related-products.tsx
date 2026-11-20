@@ -27,7 +27,7 @@ export function RelatedProducts({
   const related = useMemo(() => {
     if (!products) return []
     return products.content
-      .filter((p) => p.productId !== currentId)
+      .filter((p) => p.id !== currentId)
       .filter((p) => p.categories.some((c) => categories.includes(c)))
       .slice(0, 10)
   }, [products, currentId, categories])
@@ -61,7 +61,7 @@ export function RelatedProducts({
           <CarouselContent>
             {related.map((product) => (
               <CarouselItem
-                key={product.variantId}
+                key={product.id}
                 className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
               >
                 <RelatedProductCard product={product} />
@@ -80,12 +80,11 @@ function RelatedProductCard({ product }: { product: CatalogProduct }) {
   return (
     <Link
       to="/product/$id"
-      params={{ id: product.productId }}
-      search={{ variant: product.variantId }}
+      params={{ id: product.id }}
       className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-transform hover:scale-[1.02] hover:shadow-md"
     >
       <Image
-        src={product.imageUrl}
+        src={product.imageUrl ?? undefined}
         alt={product.name}
         containerClassName="aspect-[4/3] w-full"
         className="size-full object-cover"

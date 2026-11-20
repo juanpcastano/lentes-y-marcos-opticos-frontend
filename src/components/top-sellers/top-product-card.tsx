@@ -7,8 +7,7 @@ export function TopProductCard({ product }: { product: TopProduct }) {
   return (
     <Link
       to="/product/$id"
-      params={{ id: product.productId }}
-      search={{ variant: product.variantId }}
+      params={{ id: product.id }}
       className="flex h-full flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-transform hover:scale-[1.02] hover:shadow-md"
     >
       <Image

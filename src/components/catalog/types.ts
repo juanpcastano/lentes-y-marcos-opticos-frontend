@@ -1,17 +1,16 @@
 export interface CatalogProduct {
-  variantId: string
-  productId: string
-  imageUrl: string
+  id: string
+  imageUrl: string | null
   name: string
-  color: string
-  brand: string
+  color: string | null
+  brand: string | null
+  reference: string | null
   price: number
-  originalPrice: number
-  discountPercentage: number
-  material: string
-  shape: string
+  stock: number
+  material: string | null
+  shape: string | null
   categories: string[]
-  badge?: "NUEVO" | "OFERTA" | null
+  badge?: "NUEVO" | null
 }
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
@@ -22,4 +21,16 @@ const copFormatter = new Intl.NumberFormat("es-CO", {
 
 export function formatCop(value: number): string {
   return copFormatter.format(value)
+}
+
+/** Título en catálogo y ficha: marca + nombre + referencia + color. */
+export function productTitle(product: {
+  brand: string | null
+  name: string
+  reference: string | null
+  color: string | null
+}): string {
+  return [product.brand, product.name, product.reference, product.color]
+    .filter((part): part is string => Boolean(part && part.trim()))
+    .join(" ")
 }

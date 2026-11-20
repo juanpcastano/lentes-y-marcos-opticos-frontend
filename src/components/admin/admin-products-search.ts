@@ -9,24 +9,10 @@ export const adminProductsSearchSchema = z.object({
   colors: z.array(z.string()).default([]),
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
-  onSale: z.boolean().optional(),
-  isNew: z.boolean().optional(),
-  active: z.enum(["true", "false"]).optional().catch(undefined),
-  needsReview: z.enum(["true"]).optional().catch(undefined),
+  statuses: z.array(z.enum(["ACTIVE", "INACTIVE", "HIDDEN"])).default([]),
+  needsReview: z.boolean().optional(),
   page: z.coerce.number().int().min(0).catch(0).optional(),
-  sort: z
-    .enum([
-      "name,asc",
-      "name,desc",
-      "brand,asc",
-      "brand,desc",
-      "createdAt,asc",
-      "createdAt,desc",
-      "updatedAt,asc",
-      "updatedAt,desc",
-    ])
-    .optional()
-    .catch(undefined),
+  sort: z.string().optional(),
 })
 
 export type AdminProductsSearch = z.infer<typeof adminProductsSearchSchema>

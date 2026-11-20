@@ -1,15 +1,11 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Plus } from "lucide-react"
+import { createFileRoute } from "@tanstack/react-router"
+import { Loader2, RefreshCw } from "lucide-react"
 import { Button } from "#/components/ui/button"
 import { AdminProductsTable } from "#/components/admin/admin-products-table"
-import { ProductFilterFields } from "#/components/catalog/product-filter-fields"
+import { AdminProductFilterFields } from "#/components/admin/admin-product-filter-fields"
 import { adminProductsSearchSchema } from "#/components/admin/admin-products-search"
-import type {
-  AdminProductsFilters,
-  AdminProductsSort,
-} from "#/components/admin/admin-products-table"
 import { useDebouncedValue } from "#/hooks/use-debounced-value"
 import {
   ADMIN_PRODUCTS_QUERY_KEY,
@@ -20,9 +16,11 @@ import {
 } from "#/query-options/admin"
 import {
   adminErrorMessage,
-  deleteAdminProduct,
   bulkSetProductsStatus,
+  syncSoftixCatalog,
 } from "#/services/admin"
+import type { ProductStatus } from "#/services/admin"
+import { toast } from "#/hooks/use-toast"
 
 export const Route = createFileRoute("/admin/products/")({
   validateSearch: adminProductsSearchSchema,
@@ -32,20 +30,9 @@ export const Route = createFileRoute("/admin/products/")({
 function ProductsPage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const queryClient = useQueryClient()
 
   const committedQuery = search.q ?? ""
-  const activeFilter = search.active
-  const needsReviewFilter = search.needsReview
-  const currentPage = search.page ?? 0
-  const currentSort = search.sort
-  const { data: categories = [] } = useQuery(
-    createAdminCategoriesQueryOptions(),
-  )
-  const { data: brands = [] } = useQuery(createAdminBrandsQueryOptions())
-  const { data: facets } = useQuery({
-    ...createAdminProductFacetsQueryOptions(),
-  })
-
   const [input, setInput] = useState(committedQuery)
   const debouncedInput = useDebouncedValue(input, 400)
 
@@ -66,6 +53,14 @@ function ProductsPage() {
     })
   }, [debouncedInput, input, committedQuery, navigate])
 
+  const { data: brands = [] } = useQuery(createAdminBrandsQueryOptions())
+  const { data: categories = [] } = useQuery(
+    createAdminCategoriesQueryOptions(),
+  )
+  const { data: facets, isPending: facetsPending } = useQuery(
+    createAdminProductFacetsQueryOptions(),
+  )
+
   const { data, isPending, error, isPlaceholderData } = useQuery(
     createAdminProductsQueryOptions({
       q: committedQuery,
@@ -74,107 +69,102 @@ function ProductsPage() {
       materials: search.materials,
       shapes: search.shapes,
       colors: search.colors,
+      statuses: search.statuses,
       priceMin: search.priceMin,
       priceMax: search.priceMax,
-      onSale: search.onSale,
-      isNew: search.isNew,
-      active: activeFilter,
-      needsReview: needsReviewFilter,
-      page: currentPage,
-      sort: currentSort,
+      page: search.page,
+      sort: search.sort,
     }),
   )
 
   useEffect(() => {
     if (!data || data.totalPages === 0) return
+    const currentPage = search.page ?? 0
     if (currentPage > data.totalPages - 1) {
       navigate({
         search: (prev) => ({ ...prev, page: data.totalPages - 1 }),
         resetScroll: false,
       })
     }
-  }, [data, currentPage, navigate])
+  }, [data, navigate, search.page])
 
-  const queryClient = useQueryClient()
-  const removeProducts = useMutation({
-    mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => deleteAdminProduct(id)))
+  const sync = useMutation({
+    mutationFn: syncSoftixCatalog,
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_PRODUCTS_QUERY_KEY,
+      })
+      toast({
+        title: "Sincronización terminada",
+        description: `${result.created} creados, ${result.updated} actualizados, ${result.hidden} ocultos, ${result.skipped} omitidos.`,
+      })
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
-  })
-  const bulkStatusProducts = useMutation({
-    mutationFn: async ({
-      ids,
-      isActive,
-    }: {
-      ids: string[]
-      isActive: boolean
-    }) => bulkSetProductsStatus(ids, isActive),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_QUERY_KEY }),
+    onError: (error) =>
+      toast({ variant: "destructive", title: adminErrorMessage(error) }),
   })
 
-  const handleFiltersChange = (filters: AdminProductsFilters) => {
-    setInput(filters.q)
-    const activeChanged = filters.active !== activeFilter
-    const reviewChanged = filters.needsReview !== needsReviewFilter
-    const searchCleared = filters.q === "" && committedQuery !== ""
-    if (!activeChanged && !reviewChanged && !searchCleared) return
+  const bulkStatus = useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: ProductStatus }) =>
+      bulkSetProductsStatus(ids, status),
+    onSuccess: async (_result, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_PRODUCTS_QUERY_KEY,
+      })
+      toast({
+        title: `Estado actualizado (${variables.ids.length})`,
+      })
+    },
+    onError: (error) =>
+      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+  })
+
+  function update(partial: Partial<typeof search>) {
     navigate({
-      search: (prev) => ({
-        ...prev,
-        q: filters.q || undefined,
-        active: filters.active,
-        needsReview: filters.needsReview,
-        page: undefined,
-      }),
+      search: (prev) => ({ ...prev, ...partial, page: undefined }),
       resetScroll: false,
     })
   }
 
-  const handlePageChange = (page: number) => {
-    navigate({
-      search: (prev) => ({ ...prev, page: page || undefined }),
-      resetScroll: false,
-    })
+  const allBrands = useMemo(() => {
+    const names = brands.map((brand) => brand.name)
+    return names.length > 0 ? names.sort() : (facets?.brands ?? [])
+  }, [brands, facets?.brands])
+
+  const allCategories = useMemo(() => {
+    const names = categories.map((category) => category.name)
+    return names.length > 0 ? names.sort() : (facets?.categories ?? [])
+  }, [categories, facets?.categories])
+
+  const filterOptions = {
+    brands: allBrands,
+    categories: allCategories,
+    materials: facets?.materials ?? [],
+    shapes: facets?.shapes ?? [],
+    colors: facets?.colors ?? [],
+    priceMin: facets?.minPrice ?? 0,
+    priceMax: facets?.maxPrice ?? 0,
   }
 
-  const handleSortChange = (sort: AdminProductsSort | undefined) => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        sort: sort ? `${sort.field},${sort.direction}` : undefined,
-        page: undefined,
-      }),
-      resetScroll: false,
-    })
+  const filterValues = {
+    brands: search.brands,
+    categories: search.categories,
+    materials: search.materials,
+    shapes: search.shapes,
+    colors: search.colors,
+    needsReview: search.needsReview,
+    priceMin: search.priceMin,
+    priceMax: search.priceMax,
   }
 
-  const handleProductFiltersChange = (filters: Partial<typeof search>) => {
-    navigate({
-      search: (prev) => {
-        const next = { ...prev, ...filters, page: undefined }
-        const hasAdvancedFilters =
-          next.brands.length > 0 ||
-          next.categories.length > 0 ||
-          next.materials.length > 0 ||
-          next.shapes.length > 0 ||
-          next.colors.length > 0 ||
-          next.priceMin !== undefined ||
-          next.priceMax !== undefined ||
-          next.onSale !== undefined ||
-          next.isNew !== undefined
-
-        return {
-          ...next,
-          active: hasAdvancedFilters ? next.active : undefined,
-          needsReview: hasAdvancedFilters ? next.needsReview : undefined,
-        }
-      },
-      resetScroll: false,
-    })
-  }
+  const Filters = () => (
+    <AdminProductFilterFields
+      options={filterOptions}
+      values={filterValues}
+      onChange={update}
+      loadingFacets={facetsPending}
+      orientation="horizontal"
+    />
+  )
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -185,67 +175,49 @@ function ProductsPage() {
             Productos
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Edita precios, descuentos, variantes e imágenes.
+            {data?.totalElements ?? 0} SKU de Softix.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/admin/products/new" search={search}>
-            <Plus />
-            Nuevo producto
-          </Link>
+        <Button
+          variant="outline"
+          disabled={sync.isPending}
+          onClick={() => sync.mutate()}
+        >
+          {sync.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="size-4" />
+          )}
+          Sincronizar ahora
         </Button>
       </header>
 
       {error && (
-        <p className="mt-6 text-sm text-destructive">
-          {adminErrorMessage(error)}
-        </p>
+        <p className="mb-4 text-sm text-destructive">{error.message}</p>
       )}
-      {removeProducts.error && (
-        <p className="mt-6 text-sm text-destructive">
-          {adminErrorMessage(removeProducts.error)}
-        </p>
-      )}
-      {bulkStatusProducts.error && (
-        <p className="mt-6 text-sm text-destructive">
-          {adminErrorMessage(bulkStatusProducts.error)}
-        </p>
-      )}
+
       <AdminProductsTable
         data={data}
         isPending={isPending}
         isPlaceholderData={isPlaceholderData}
-        filters={{
-          q: input,
-          active: activeFilter,
-          needsReview: needsReviewFilter,
+        filters={{ q: input, needsReview: search.needsReview ?? false }}
+        onFiltersChange={(next) => {
+          setInput(next.q)
+          if (next.needsReview !== (search.needsReview ?? false)) {
+            update({ needsReview: next.needsReview || undefined })
+          }
         }}
-        onFiltersChange={handleFiltersChange}
-        sort={currentSort}
-        onSortChange={handleSortChange}
-        page={currentPage}
-        onPageChange={handlePageChange}
-        onDelete={(ids) => removeProducts.mutate(ids)}
-        isDeleting={removeProducts.isPending}
-        onBulkStatus={(ids, isActive) =>
-          bulkStatusProducts.mutate({ ids, isActive })
-        }
-        isUpdatingStatus={bulkStatusProducts.isPending}
+        sort={search.sort}
+        onSortChange={(sort) => update({ sort: sort || undefined })}
+        page={search.page ?? 0}
+        onPageChange={(page) => update({ page })}
+        onBulkStatus={(ids, status) => bulkStatus.mutate({ ids, status })}
+        isUpdatingStatus={bulkStatus.isPending}
         returnSearch={search}
-        filtersContent={
-          <ProductFilterFields
-            options={{
-              brands: brands.map((brand) => brand.name).sort(),
-              categories: categories.map((category) => category.name).sort(),
-              materials: facets?.materials ?? [],
-              shapes: facets?.shapes ?? [],
-              colors: facets?.colors ?? [],
-              priceMin: facets?.minPrice ?? 0,
-              priceMax: facets?.maxPrice ?? 0,
-            }}
-            values={search}
-            onChange={handleProductFiltersChange}
-          />
+        filtersContent={<Filters />}
+        statuses={search.statuses ?? []}
+        onStatusesChange={(statuses) =>
+          update({ statuses: statuses.length > 0 ? statuses : undefined })
         }
       />
     </div>
