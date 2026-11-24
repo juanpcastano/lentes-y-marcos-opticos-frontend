@@ -129,7 +129,6 @@ function CartLineCard({
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
       setSubmitting(false)
     },
   })
@@ -166,7 +165,6 @@ function CartLineCard({
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
       setSubmitting(false)
     },
   })
@@ -216,6 +214,11 @@ function CartLineCard({
                   {formatCop(line.unitPrice)}
                 </span>
               )}
+              {!unavailable && line.availabilityNotice && (
+                <span className="text-sm text-amber-700 dark:text-amber-400">
+                  {line.availabilityNotice}
+                </span>
+              )}
             </div>
             <Button
               variant="ghost"
@@ -236,6 +239,7 @@ function CartLineCard({
             ) : (
               <QuantityStepper
                 quantity={line.quantity}
+                maxQuantity={line.maxQuantity}
                 onChange={handleQuantityChange}
                 disabled={blocked}
               />
@@ -254,10 +258,12 @@ function CartLineCard({
 
 function QuantityStepper({
   quantity,
+  maxQuantity,
   onChange,
   disabled,
 }: {
   quantity: number
+  maxQuantity: number
   onChange: (next: number) => void
   disabled: boolean
 }) {
@@ -280,7 +286,7 @@ function QuantityStepper({
         variant="outline"
         size="icon"
         className="size-8"
-        disabled={disabled}
+        disabled={disabled || quantity >= maxQuantity}
         onClick={() => onChange(quantity + 1)}
         aria-label="Aumentar cantidad"
       >

@@ -4,6 +4,7 @@ import { Loader2, ShoppingCart } from "lucide-react"
 import { useState } from "react"
 
 import createProductQueryOptions from "#/query-options/product"
+import createInventoryAvailabilityQueryOptions from "#/query-options/inventory"
 import createCartQueryOptions, { CART_QUERY_KEY } from "#/query-options/cart"
 import { addToCart, cartLineKey } from "#/services/cart"
 import type { Cart } from "#/services/cart"
@@ -47,11 +48,16 @@ function ProductDetailPage() {
     ...createCartQueryOptions(),
     enabled: !!user,
   })
+  const inventory = useQuery(
+    createInventoryAvailabilityQueryOptions(product?.sku),
+  )
   const title = product ? productTitle(product) : ""
+  const liveAvailable =
+    Boolean(product?.available) && (inventory.data?.availableQuantity ?? 0) > 0
 
   const addToCartMutation = useMutation({
     mutationFn: () => {
-      if (!product || !product.available) {
+      if (!product || !liveAvailable) {
         throw new Error("El producto no está disponible.")
       }
       return addToCart(
@@ -63,6 +69,7 @@ function ProductDetailPage() {
           productName: title,
           imageUrl: product.imageUrl,
           price: product.price,
+          sku: product.sku,
         },
         title,
       )
@@ -79,6 +86,7 @@ function ProductDetailPage() {
             imageUrl: product.imageUrl ?? "",
             unitPrice: product.price,
             quantity: 1,
+            maxQuantity: inventory.data?.availableQuantity ?? 0,
             lineTotal: product.price,
           },
         ]
@@ -101,7 +109,6 @@ function ProductDetailPage() {
     },
     onSuccess: () => setCartSheetOpen(true),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
       setSubmitting(false)
     },
   })
@@ -112,7 +119,7 @@ function ProductDetailPage() {
 
   function handleAddToCart() {
     if (submitting || addToCartMutation.isPending) return
-    if (!product?.available) return
+    if (!liveAvailable || inventory.isLoading || inventory.isError) return
     if (!user) {
       navigate({ to: "/login", search: { redirect: `/product/${id}` } })
       return
@@ -191,11 +198,13 @@ function ProductDetailPage() {
             {formatCop(product.price)}
           </span>
           <span className="text-sm text-muted-foreground">
-            {product.available
-              ? "Disponible"
-              : product.status === "INACTIVE"
-                ? "No disponible"
-                : "Agotado"}
+            {inventory.isError
+              ? "No se pudo comprobar la disponibilidad"
+              : liveAvailable
+                ? "Disponible"
+                : product.status === "INACTIVE"
+                  ? "No disponible"
+                  : "Agotado"}
           </span>
 
           {showDescription && (
@@ -261,12 +270,22 @@ function ProductDetailPage() {
             size="lg"
             className="mt-2 w-full sm:w-auto"
             disabled={
-              !product.available || submitting || addToCartMutation.isPending
+              !liveAvailable ||
+              inventory.isLoading ||
+              inventory.isError ||
+              submitting ||
+              addToCartMutation.isPending
             }
             onClick={handleAddToCart}
           >
-            {!product.available ? (
-              product.status === "INACTIVE" ? "No disponible" : "Agotado"
+            {inventory.isError ? (
+              "No se pudo comprobar el stock"
+            ) : !liveAvailable ? (
+              product.status === "INACTIVE" ? (
+                "No disponible"
+              ) : (
+                "Agotado"
+              )
             ) : submitting || addToCartMutation.isPending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />

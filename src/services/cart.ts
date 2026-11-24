@@ -1,9 +1,14 @@
-import { fetchProductById } from "#/services/products"
+import {
+  fetchInventoryAvailability,
+  fetchProductById,
+} from "#/services/products"
+import type { InventoryAvailability } from "#/services/products"
 import { productTitle } from "#/components/catalog/types"
 import type { ProductDetail } from "#/components/product-detail/types"
 
 export type CartItem = {
   productId: string
+  sku?: string
   quantity: number
   productName?: string
   imageUrl?: string
@@ -16,8 +21,10 @@ export type CartLine = {
   imageUrl: string
   unitPrice: number
   quantity: number
+  maxQuantity: number
   lineTotal: number
   unavailableReason?: string
+  availabilityNotice?: string
 }
 
 export type Cart = {
@@ -34,6 +41,8 @@ export function cartLineKey(productId: string): string {
 
 const CART_KEY = "mock_cart"
 const CART_ID = "cart"
+const productCache = new Map<string, ProductDetail>()
+const availabilityCache = new Map<string, InventoryAvailability>()
 
 function readPersistedCart(): CartItem[] {
   const stored = localStorage.getItem(CART_KEY)
@@ -60,25 +69,31 @@ function writePersistedCart(lines: CartItem[]): void {
 function resolveLines(
   persisted: CartItem[],
   details: Map<string, ProductDetail>,
+  availability: Map<string, InventoryAvailability>,
+  unavailableSkus: Set<string>,
 ): { lines: CartLine[]; unavailableItems: CartLine[] } {
   const lines: CartLine[] = []
   const unavailableItems: CartLine[] = []
 
   for (const line of persisted) {
     const product = details.get(line.productId)
-    const quantity = line.quantity
+    const liveAvailability = product ? availability.get(product.sku) : undefined
+    const quantity = liveAvailability
+      ? Math.min(line.quantity, liveAvailability.availableQuantity)
+      : line.quantity
     const name = product
       ? productTitle(product)
       : (line.productName ?? "Producto no disponible")
     const imageUrl = product?.imageUrl ?? line.imageUrl ?? ""
     // Precio vivo de Softix; el precio guardado es solo respaldo.
     const unitPrice = product?.price ?? line.unitPrice ?? 0
-    const base = {
+    const base: CartLine = {
       productId: line.productId,
       name,
       imageUrl,
       unitPrice,
       quantity,
+      maxQuantity: liveAvailability?.availableQuantity ?? 0,
       lineTotal: unitPrice * quantity,
     }
 
@@ -89,15 +104,25 @@ function resolveLines(
         lineTotal: 0,
         unavailableReason: "No se pudo comprobar la disponibilidad",
       })
-    } else if (!product.available || quantity > product.stock) {
+    } else if (unavailableSkus.has(product.sku)) {
       unavailableItems.push({
         ...base,
         lineTotal: 0,
-        unavailableReason: product.available
-          ? "El stock disponible cambió"
-          : "Agotado",
+        unavailableReason: "No se pudo comprobar la disponibilidad",
+      })
+    } else if (
+      !product.available ||
+      liveAvailability?.availableQuantity === 0
+    ) {
+      unavailableItems.push({
+        ...base,
+        lineTotal: 0,
+        unavailableReason: product.available ? "Agotado" : "No disponible",
       })
     } else {
+      if (quantity < line.quantity) {
+        base.availabilityNotice = `La cantidad se ajustó a ${quantity} por cambio de stock`
+      }
       lines.push(base)
     }
   }
@@ -105,7 +130,10 @@ function resolveLines(
   return { lines, unavailableItems }
 }
 
-async function buildCart(persisted: CartItem[]): Promise<Cart> {
+async function buildCart(
+  persisted: CartItem[],
+  refreshAvailability = false,
+): Promise<Cart> {
   if (persisted.length === 0) {
     return { id: CART_ID, items: [], unavailableItems: [], subtotal: 0 }
   }
@@ -113,16 +141,52 @@ async function buildCart(persisted: CartItem[]): Promise<Cart> {
   const ids = [...new Set(persisted.map((line) => line.productId))]
   const entries = await Promise.all(
     ids.map(async (id) => {
-      const detail = await fetchProductById(id).catch(() => null)
-      return [id, detail] as const
+      let detail = productCache.get(id)
+      if (!detail || refreshAvailability) {
+        detail = (await fetchProductById(id).catch(() => null)) ?? undefined
+        if (detail) productCache.set(id, detail)
+      }
+      if (!detail) return [id, detail, null] as const
+      let current = availabilityCache.get(detail.sku)
+      if (!current || refreshAvailability) {
+        try {
+          current = await fetchInventoryAvailability(detail.sku)
+          availabilityCache.set(detail.sku, current)
+        } catch {
+          return [id, detail, null] as const
+        }
+      }
+      return [id, detail, current] as const
     }),
   )
   const details = new Map<string, ProductDetail>()
-  for (const [id, detail] of entries) {
+  const availability = new Map<string, InventoryAvailability>()
+  const unavailableSkus = new Set<string>()
+  for (const [id, detail, current] of entries) {
     if (detail) details.set(id, detail)
+    if (detail && current) availability.set(detail.sku, current)
+    if (detail && !current) unavailableSkus.add(detail.sku)
   }
 
-  const { lines, unavailableItems } = resolveLines(persisted, details)
+  const { lines, unavailableItems } = resolveLines(
+    persisted,
+    details,
+    availability,
+    unavailableSkus,
+  )
+  const adjusted = persisted.map((line) => {
+    const detail = details.get(line.productId)
+    const current = detail ? availability.get(detail.sku) : undefined
+    return current
+      ? {
+          ...line,
+          quantity: Math.min(line.quantity, current.availableQuantity),
+        }
+      : line
+  })
+  if (JSON.stringify(adjusted) !== JSON.stringify(persisted)) {
+    writePersistedCart(adjusted)
+  }
   return {
     id: CART_ID,
     items: lines,
@@ -132,7 +196,7 @@ async function buildCart(persisted: CartItem[]): Promise<Cart> {
 }
 
 export async function fetchCart(): Promise<Cart> {
-  return buildCart(readPersistedCart())
+  return buildCart(readPersistedCart(), true)
 }
 
 export async function addToCart(
@@ -144,6 +208,7 @@ export async function addToCart(
     productName: string
     imageUrl: string | null
     price: number
+    sku: string
   },
   productName?: string,
 ): Promise<Cart> {
@@ -154,6 +219,7 @@ export async function addToCart(
   } else {
     lines.push({
       productId,
+      sku: product.sku,
       quantity,
       productName: productName ?? product.productName,
       imageUrl: product.imageUrl ?? undefined,

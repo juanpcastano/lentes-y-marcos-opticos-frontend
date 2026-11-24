@@ -16,6 +16,7 @@ export default function createCartQueryOptions<TData = Cart, TError = Error>(
   return queryOptions<Cart, TError, TData>({
     queryKey: CART_QUERY_KEY,
     queryFn: fetchCart,
+    refetchOnMount: "always",
     ...options,
   })
 }

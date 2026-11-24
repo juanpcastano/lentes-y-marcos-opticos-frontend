@@ -176,8 +176,9 @@ function ColumnHeader({
   onSortChange: (sort: string | undefined) => void
   canSort?: boolean
 }) {
+  if (!canSort) return <span>{title}</span>
+
   const options = SORT_OPTIONS[columnId]
-  if (!canSort || !options) return <span>{title}</span>
 
   return (
     <DropdownMenu>

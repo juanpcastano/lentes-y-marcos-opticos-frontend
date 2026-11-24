@@ -35,7 +35,7 @@ export function Image({
       )}
 
       <img
-        src={src}
+        src={src || undefined}
         alt={alt}
         decoding={decoding}
         draggable={draggable}

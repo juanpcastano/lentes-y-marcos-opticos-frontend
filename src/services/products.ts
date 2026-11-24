@@ -36,6 +36,11 @@ export interface ProductFacets {
   maxPrice: number | null
 }
 
+export interface InventoryAvailability {
+  sku: string
+  availableQuantity: number
+}
+
 export async function fetchProducts(
   params: ProductsParams = {},
 ): Promise<ProductPage> {
@@ -73,6 +78,14 @@ export async function fetchProducts(
 
 export async function fetchProductById(id: string): Promise<ProductDetail> {
   return api.get<ProductDetail>(`/products/${id}`)
+}
+
+export async function fetchInventoryAvailability(
+  sku: string,
+): Promise<InventoryAvailability> {
+  return api.get<InventoryAvailability>(
+    `/inventory/availability/${encodeURIComponent(sku)}`,
+  )
 }
 
 export async function fetchProductFacets(): Promise<ProductFacets> {

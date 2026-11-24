@@ -100,8 +100,11 @@ function ProductsPage() {
         description: `${result.updated} actualizados, ${result.hidden} ocultos, ${result.errors} con error.`,
       })
     },
-    onError: (error) =>
-      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+    onError: (mutationError) =>
+      toast({
+        variant: "destructive",
+        title: adminErrorMessage(mutationError),
+      }),
   })
 
   const removeProducts = useMutation({
@@ -124,8 +127,11 @@ function ProductsPage() {
       }
       toast({ title: `${deleted} producto(s) eliminado(s)` })
     },
-    onError: (error) =>
-      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+    onError: (mutationError) =>
+      toast({
+        variant: "destructive",
+        title: adminErrorMessage(mutationError),
+      }),
   })
 
   const bulkStatus = useMutation({
@@ -139,8 +145,11 @@ function ProductsPage() {
         title: `Estado actualizado (${variables.ids.length})`,
       })
     },
-    onError: (error) =>
-      toast({ variant: "destructive", title: adminErrorMessage(error) }),
+    onError: (mutationError) =>
+      toast({
+        variant: "destructive",
+        title: adminErrorMessage(mutationError),
+      }),
   })
 
   function update(partial: Partial<typeof search>) {
@@ -242,7 +251,7 @@ function ProductsPage() {
         isDeleting={removeProducts.isPending}
         returnSearch={search}
         filtersContent={<Filters />}
-        statuses={search.statuses ?? []}
+        statuses={search.statuses}
         onStatusesChange={(statuses) =>
           update({ statuses: statuses.length > 0 ? statuses : undefined })
         }
