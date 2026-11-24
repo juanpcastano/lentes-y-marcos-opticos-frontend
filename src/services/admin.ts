@@ -128,16 +128,27 @@ export interface SyncRun {
   status: SyncRunStatus
   startedAt: string
   finishedAt: string | null
+  created: number
   updated: number
   hidden: number
+  restored: number
   errors: number
+  newBrands: number
+  newCategories: number
   errorMessage: string | null
 }
 
+export type SyncEventEntity = "PRODUCT" | "BRAND" | "CATEGORY" | "RUN"
+
+export type SyncEventAction =
+  "CREATED" | "UPDATED" | "HIDDEN" | "RESTORED" | "BLOCKED" | "SUMMARY"
+
 export interface SyncLog {
   id: number
+  entityType: SyncEventEntity
+  entityKey: string | null
+  action: SyncEventAction
   level: "INFO" | "WARN" | "ERROR"
-  sku: string | null
   field: string | null
   oldValue: string | null
   newValue: string | null
@@ -165,8 +176,13 @@ export interface SyncPreview {
   errors: number
   stockChanged: number
   priceChanged: number
+  newBrands: string[]
+  newCategories: string[]
   issues: SyncIssue[]
 }
+
+export type SoftixNewSkuState =
+  "VALID" | "BLOCKED" | "IGNORED_BY_BRAND" | "IGNORED_BY_SKU"
 
 export interface SoftixImportNewSku {
   sku: string
@@ -177,9 +193,8 @@ export interface SoftixImportNewSku {
   name: string | null
   price: number
   stock: number
-  blocked: boolean
+  state: SoftixNewSkuState
   blockReason: string | null
-  ignored: boolean
 }
 
 export interface SoftixImportPreview {
@@ -195,6 +210,8 @@ export interface SoftixImportPreview {
   newSkus: SoftixImportNewSku[]
   ignoredBrands: string[]
   ignoredSkus: string[]
+  newBrands: string[]
+  newCategories: string[]
   toCreate: string[]
   toUpdate: string[]
   toHide: string[]
@@ -276,7 +293,9 @@ export function syncSoftixCatalog() {
 }
 
 export function fetchSoftixImportPreview() {
-  return api.get<SoftixImportPreview>("/admin/integration/softix/import/preview")
+  return api.get<SoftixImportPreview>(
+    "/admin/integration/softix/import/preview",
+  )
 }
 
 export function runSoftixImport() {

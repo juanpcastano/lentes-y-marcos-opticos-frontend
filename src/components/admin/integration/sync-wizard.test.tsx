@@ -66,6 +66,8 @@ describe("SyncWizard", () => {
       errors: 1,
       stockChanged: 40,
       priceChanged: 7,
+      newBrands: [],
+      newCategories: [],
       issues: [],
     })
 

@@ -32,7 +32,7 @@ import {
   createAdminSyncRunsQueryOptions,
 } from "#/query-options/admin"
 import { adminErrorMessage } from "#/services/admin"
-import type { SyncRun } from "#/services/admin"
+import type { SyncLog, SyncRun } from "#/services/admin"
 import {
   formatSyncChange,
   formatSyncDateTime,
@@ -247,8 +247,11 @@ function SyncRunDialog({
               >
                 {SYNC_STATUS_LABELS[detail.data.run.status]}
               </span>
-              {detail.data.run.updated} actualizados, {detail.data.run.hidden}{" "}
-              ocultos, {detail.data.run.errors} con error.
+              {detail.data.run.created} creados, {detail.data.run.updated}{" "}
+              actualizados, {detail.data.run.hidden} ocultos,{" "}
+              {detail.data.run.restored} restaurados, {detail.data.run.errors}{" "}
+              con error, {detail.data.run.newBrands} marcas nuevas y{" "}
+              {detail.data.run.newCategories} categorías nuevas.
             </p>
             {detail.data.run.errorMessage && (
               <p className="text-sm text-destructive">
@@ -256,34 +259,59 @@ function SyncRunDialog({
               </p>
             )}
             <ol className="max-h-[60vh] divide-y overflow-y-auto rounded-md border text-sm">
-              {detail.data.logs.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="grid gap-1 p-2 sm:grid-cols-[auto_auto_1fr] sm:gap-3"
-                >
-                  <span className="text-xs text-muted-foreground">
-                    {formatSyncDateTime(entry.createdAt)}
-                  </span>
-                  <span
-                    className={`font-mono text-xs ${SYNC_LEVEL_CLASSES[entry.level]}`}
-                  >
-                    {entry.level}
-                    {entry.sku ? ` · ${entry.sku}` : ""}
-                    {formatSyncChange(
-                      entry.field,
-                      entry.oldValue,
-                      entry.newValue,
-                    ) && (
-                      <span className="block text-[11px] text-muted-foreground">
-                        {formatSyncChange(
-                          entry.field,
-                          entry.oldValue,
-                          entry.newValue,
-                        )}
-                      </span>
-                    )}
-                  </span>
-                  <span>{entry.message}</span>
+              {Object.entries(
+                detail.data.logs.reduce<Record<string, SyncLog[]>>(
+                  (groups, entry) => {
+                    const label =
+                      entry.entityType === "PRODUCT"
+                        ? "Productos"
+                        : entry.entityType === "BRAND"
+                          ? "Marcas nuevas"
+                          : entry.entityType === "CATEGORY"
+                            ? "Categorías nuevas"
+                            : "Resumen y errores"
+                    ;(groups[label] ??= []).push(entry)
+                    return groups
+                  },
+                  {},
+                ),
+              ).map(([group, entries]) => (
+                <li key={group} className="list-none">
+                  <h3 className="border-b bg-muted/40 px-2 py-1 text-xs font-semibold">
+                    {group}
+                  </h3>
+                  <ol className="divide-y">
+                    {entries.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="grid gap-1 p-2 sm:grid-cols-[auto_auto_1fr] sm:gap-3"
+                      >
+                        <span className="text-xs text-muted-foreground">
+                          {formatSyncDateTime(entry.createdAt)}
+                        </span>
+                        <span
+                          className={`font-mono text-xs ${SYNC_LEVEL_CLASSES[entry.level]}`}
+                        >
+                          {entry.action} · {entry.level}
+                          {entry.entityKey ? ` · ${entry.entityKey}` : ""}
+                          {formatSyncChange(
+                            entry.field,
+                            entry.oldValue,
+                            entry.newValue,
+                          ) && (
+                            <span className="block text-[11px] text-muted-foreground">
+                              {formatSyncChange(
+                                entry.field,
+                                entry.oldValue,
+                                entry.newValue,
+                              )}
+                            </span>
+                          )}
+                        </span>
+                        <span>{entry.message}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </li>
               ))}
             </ol>

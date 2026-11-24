@@ -203,8 +203,8 @@ export function SyncWizard({ onViewLogs }: Props) {
             >
               {connection.isFetching
                 ? "Verificando conexión con Softix…"
-                : connection.data?.message ??
-                  "No fue posible verificar la conexión con Softix."}
+                : (connection.data?.message ??
+                  "No fue posible verificar la conexión con Softix.")}
             </p>
           </div>
         )}
@@ -223,12 +223,30 @@ export function SyncWizard({ onViewLogs }: Props) {
             ) : data ? (
               <>
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Metric label="Actualizados" value={data.updated} />
+                  <Metric label="Se actualizarán" value={data.updated} />
                   <Metric label="Se ocultarán" value={data.hidden} />
                   <Metric label="Con error" value={data.errors} />
                   <Metric label="Cambios de stock" value={data.stockChanged} />
                   <Metric label="Cambios de precio" value={data.priceChanged} />
+                  <Metric label="Marcas nuevas" value={data.newBrands.length} />
+                  <Metric
+                    label="Categorías nuevas"
+                    value={data.newCategories.length}
+                  />
                 </dl>
+
+                {data.newBrands.length > 0 && (
+                  <SkuSection
+                    title="Marcas nuevas"
+                    items={data.newBrands.map((b) => ({ sku: b }))}
+                  />
+                )}
+                {data.newCategories.length > 0 && (
+                  <SkuSection
+                    title="Categorías nuevas"
+                    items={data.newCategories.map((c) => ({ sku: c }))}
+                  />
+                )}
                 {data.hidden > 0 && (
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     {data.hidden} productos dejarán de mostrarse porque ya no
@@ -245,7 +263,10 @@ export function SyncWizard({ onViewLogs }: Props) {
                               (i) =>
                                 i.level !== "ERROR" &&
                                 i.field !== null &&
-                                !(i.field === "estado" && i.newValue === "HIDDEN"),
+                                !(
+                                  i.field === "softixMissing" &&
+                                  i.newValue === "true"
+                                ),
                             )
                             .map((i) => i.sku)
                             .filter((s): s is string => !!s),
@@ -256,7 +277,8 @@ export function SyncWizard({ onViewLogs }: Props) {
                           shownIssues
                             .filter(
                               (i) =>
-                                i.field === "estado" && i.newValue === "HIDDEN",
+                                i.field === "softixMissing" &&
+                                i.newValue === "true",
                             )
                             .map((i) => i.sku)
                             .filter((s): s is string => !!s),
@@ -341,10 +363,44 @@ export function SyncWizard({ onViewLogs }: Props) {
               </span>
               Sincronización terminada
             </p>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Metric label="Actualizados" value={lastRun.updated} />
               <Metric label="Ocultos" value={lastRun.hidden} />
               <Metric label="Con error" value={lastRun.errors} />
+              <Metric
+                label="Marcas nuevas"
+                value={
+                  detail.data
+                    ? new Set(
+                        detail.data.logs
+                          .filter(
+                            (l) =>
+                              l.entityType === "BRAND" &&
+                              l.action === "CREATED",
+                          )
+                          .map((l) => l.entityKey)
+                          .filter((v): v is string => !!v),
+                      ).size
+                    : 0
+                }
+              />
+              <Metric
+                label="Categorías nuevas"
+                value={
+                  detail.data
+                    ? new Set(
+                        detail.data.logs
+                          .filter(
+                            (l) =>
+                              l.entityType === "CATEGORY" &&
+                              l.action === "CREATED",
+                          )
+                          .map((l) => l.entityKey)
+                          .filter((v): v is string => !!v),
+                      ).size
+                    : 0
+                }
+              />
             </dl>
 
             {detail.data && (
@@ -359,20 +415,17 @@ export function SyncWizard({ onViewLogs }: Props) {
                             l.level !== "ERROR" &&
                             l.field !== null &&
                             l.field !== "creación" &&
-                            !(l.field === "estado" && l.newValue === "HIDDEN"),
+                            !(l.action === "HIDDEN"),
                         )
-                        .map((l) => l.sku)
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
                   const hidden = Array.from(
                     new Set(
                       logs
-                        .filter(
-                          (l) =>
-                            l.field === "estado" && l.newValue === "HIDDEN",
-                        )
-                        .map((l) => l.sku)
+                        .filter((l) => l.action === "HIDDEN")
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
@@ -380,7 +433,7 @@ export function SyncWizard({ onViewLogs }: Props) {
                     new Set(
                       logs
                         .filter((l) => l.level === "ERROR")
-                        .map((l) => l.sku)
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
@@ -390,7 +443,9 @@ export function SyncWizard({ onViewLogs }: Props) {
                         <SkuSection
                           title="Se actualizaron"
                           items={updated.map((sku) => {
-                            const items = logs.filter((l) => l.sku === sku)
+                            const items = logs.filter(
+                              (l) => l.entityKey === sku,
+                            )
                             return {
                               sku,
                               detail: items
@@ -409,7 +464,8 @@ export function SyncWizard({ onViewLogs }: Props) {
                           title="Se ocultaron"
                           items={hidden.map((sku) => ({
                             sku,
-                            detail: logs.find((l) => l.sku === sku)?.message,
+                            detail: logs.find((l) => l.entityKey === sku)
+                              ?.message,
                           }))}
                         />
                       )}
@@ -418,10 +474,53 @@ export function SyncWizard({ onViewLogs }: Props) {
                           title="Con error"
                           items={errors.map((sku) => ({
                             sku,
-                            detail: logs.find((l) => l.sku === sku)?.message,
+                            detail: logs.find((l) => l.entityKey === sku)
+                              ?.message,
                           }))}
                         />
                       )}
+                      {(() => {
+                        const newBrands = Array.from(
+                          new Set(
+                            logs
+                              .filter(
+                                (l) =>
+                                  l.entityType === "BRAND" &&
+                                  l.action === "CREATED",
+                              )
+                              .map((l) => l.entityKey)
+                              .filter((v): v is string => !!v),
+                          ),
+                        )
+                        const newCategories = Array.from(
+                          new Set(
+                            logs
+                              .filter(
+                                (l) =>
+                                  l.entityType === "CATEGORY" &&
+                                  l.action === "CREATED",
+                              )
+                              .map((l) => l.entityKey)
+                              .filter((v): v is string => !!v),
+                          ),
+                        )
+                        return (
+                          <>
+                            {newBrands.length > 0 && (
+                              <SkuSection
+                                title="Marcas nuevas"
+                                items={newBrands.map((b) => ({ sku: b }))}
+                              />
+                            )}
+                            {newCategories.length > 0 && (
+                              <SkuSection
+                                title="Categorías nuevas"
+                                items={newCategories.map((c) => ({ sku: c }))}
+                              />
+                            )}
+                          </>
+                        )
+                      })()}
                     </>
                   )
                 })()}
@@ -440,8 +539,6 @@ export function SyncWizard({ onViewLogs }: Props) {
     </Card>
   )
 }
-
-
 
 function SkuSection({
   title,
@@ -485,7 +582,6 @@ function SkuSection({
     </Collapsible>
   )
 }
-
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (

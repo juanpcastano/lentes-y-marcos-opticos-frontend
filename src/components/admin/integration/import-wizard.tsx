@@ -32,16 +32,29 @@ import {
   unignoreBrand,
   unignoreSku,
 } from "#/services/admin"
-import type { SyncRun } from "#/services/admin"
+import type { SoftixNewSkuState, SyncRun } from "#/services/admin"
 import {
   SYNC_STATUS_CLASSES,
   SYNC_STATUS_LABELS,
 } from "#/components/admin/integration/sync-labels"
 
-const STEPS = ["Conexión", "Marcas", "Productos", "Vista previa", "Resultado"] as const
+const STEPS = [
+  "Conexión",
+  "Marcas",
+  "Productos",
+  "Vista previa",
+  "Resultado",
+] as const
 
 type Props = {
   onViewLogs: () => void
+}
+
+const SOFTIX_STATE_LABELS: Record<SoftixNewSkuState, string> = {
+  VALID: "Válido",
+  BLOCKED: "Bloqueado",
+  IGNORED_BY_BRAND: "Ignorado por marca",
+  IGNORED_BY_SKU: "Ignorado por SKU",
 }
 
 /** Asistente de importación: marcas → productos → vista previa → resultado. */
@@ -53,6 +66,7 @@ export function ImportWizard({ onViewLogs }: Props) {
   const [selectedBrands, setSelectedBrands] = useState<Set<string>>(new Set())
   const [activeBrand, setActiveBrand] = useState<string | null>(null)
   const [maxStep, setMaxStep] = useState(0)
+  const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set())
 
   const connection = useQuery({
     queryKey: ["admin", "integration", "connection"],
@@ -86,7 +100,9 @@ export function ImportWizard({ onViewLogs }: Props) {
       ])
     },
     onError: async (error) => {
-      await queryClient.invalidateQueries({ queryKey: ADMIN_SYNC_RUNS_QUERY_KEY })
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_SYNC_RUNS_QUERY_KEY,
+      })
       toast({ variant: "destructive", title: adminErrorMessage(error) })
     },
   })
@@ -104,7 +120,9 @@ export function ImportWizard({ onViewLogs }: Props) {
     new Set(
       (data?.newSkus ?? [])
         .map((s) => s.brand)
-        .filter((b): b is string => !!b && !(data?.ignoredBrands ?? []).includes(b)),
+        .filter(
+          (b): b is string => !!b && !(data?.ignoredBrands ?? []).includes(b),
+        ),
     ),
   ).sort()
 
@@ -112,7 +130,8 @@ export function ImportWizard({ onViewLogs }: Props) {
     // default active brand
   }
 
-  const currentBrand = activeBrand ?? (includedBrands.length > 0 ? includedBrands[0] : null)
+  const currentBrand =
+    activeBrand ?? (includedBrands.length > 0 ? includedBrands[0] : null)
 
   const filteredBrands = Array.from(
     new Set((data?.newSkus ?? []).map((s) => s.brand).filter(Boolean)),
@@ -155,14 +174,6 @@ export function ImportWizard({ onViewLogs }: Props) {
   const includeSelectedBrands = async () => {
     await Promise.all([...selectedBrands].map((b) => unignoreBrand(b)))
     setSelectedBrands(new Set())
-    await queryClient.invalidateQueries({
-      queryKey: ["admin", "integration", "import-preview"],
-    })
-  }
-
-  const toggleSkuIgnored = async (sku: string, ignored: boolean) => {
-    if (ignored) await unignoreSku(sku)
-    else await ignoreSku(sku)
     await queryClient.invalidateQueries({
       queryKey: ["admin", "integration", "import-preview"],
     })
@@ -323,8 +334,8 @@ export function ImportWizard({ onViewLogs }: Props) {
               >
                 {connection.isFetching
                   ? "Verificando conexión con Softix…"
-                  : connection.data?.message ??
-                    "No fue posible verificar la conexión con Softix."}
+                  : (connection.data?.message ??
+                    "No fue posible verificar la conexión con Softix.")}
               </p>
             </div>
           </>
@@ -344,8 +355,8 @@ export function ImportWizard({ onViewLogs }: Props) {
             ) : data ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Marcas detectadas en los SKUs nuevos. Selecciona las que quieras
-                  ignorar.
+                  Marcas detectadas en los SKUs nuevos. Selecciona las que
+                  quieras ignorar.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
@@ -382,7 +393,7 @@ export function ImportWizard({ onViewLogs }: Props) {
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {filteredBrands.map((brand) => {
-                    const ignored = (data.ignoredBrands).includes(brand)
+                    const ignored = data.ignoredBrands.includes(brand)
                     const count = data.newSkus.filter(
                       (s) => s.brand === brand,
                     ).length
@@ -461,78 +472,132 @@ export function ImportWizard({ onViewLogs }: Props) {
                     </button>
                   ))}
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={
+                        selectedSkus.size > 0 &&
+                        data.newSkus
+                          .filter((s) => s.brand === currentBrand)
+                          .every((s) => selectedSkus.has(s.sku))
+                      }
+                      onCheckedChange={(v) => {
+                        const skus = data.newSkus.filter(
+                          (s) => s.brand === currentBrand,
+                        )
+                        setSelectedSkus((prev) => {
+                          const next = new Set(prev)
+                          if (v) skus.forEach((s) => next.add(s.sku))
+                          else skus.forEach((s) => next.delete(s.sku))
+                          return next
+                        })
+                      }}
+                    />
+                    Seleccionar todo
+                  </label>
+                  <div className="ml-auto flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedSkus.size === 0}
+                      onClick={async () => {
+                        await Promise.all(
+                          [...selectedSkus].map((sku) => ignoreSku(sku)),
+                        )
+                        setSelectedSkus(new Set())
+                        await queryClient.invalidateQueries({
+                          queryKey: ["admin", "integration", "import-preview"],
+                        })
+                      }}
+                    >
+                      Ignorar ({selectedSkus.size})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={selectedSkus.size === 0}
+                      onClick={async () => {
+                        await Promise.all(
+                          [...selectedSkus].map((sku) => unignoreSku(sku)),
+                        )
+                        setSelectedSkus(new Set())
+                        await queryClient.invalidateQueries({
+                          queryKey: ["admin", "integration", "import-preview"],
+                        })
+                      }}
+                    >
+                      Incluir ({selectedSkus.size})
+                    </Button>
+                  </div>
+                </div>
+
                 {includedBrands.map((b) => {
                   if (b !== currentBrand) return null
                   // show all skus of brand; mark sku-ignored
                   const brandSkus = data.newSkus.filter((s) => s.brand === b)
                   return (
                     <div key={b} className="mt-4 grid gap-2">
-                          {brandSkus.map((sku) => {
-                            const skuIgnored = (data.ignoredSkus).includes(
-                              sku.sku,
-                            )
-                            const brandIgnored = (data.ignoredBrands).includes(
-                              b,
-                            )
-                            const blocked = sku.blocked
-                            return (
-                              <label
-                                key={sku.sku}
-                                className={`flex items-center justify-between gap-3 rounded-md border p-3 ${
-                                  blocked
-                                    ? "opacity-50"
-                                    : skuIgnored || brandIgnored
-                                      ? "opacity-60"
-                                      : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <Checkbox
-                                    checked={
-                                      !blocked && !skuIgnored && !brandIgnored
-                                    }
-                                    disabled={blocked || brandIgnored}
-                                    onCheckedChange={() =>
-                                      toggleSkuIgnored(sku.sku, skuIgnored)
-                                    }
-                                  />
-                                  <div>
-                                    <p className="font-mono text-xs">{sku.sku}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {sku.reference ?? "—"} ·{" "}
-                                      {sku.color ?? "—"} · {sku.category ?? "—"}
-                                    </p>
-                                    {blocked && (
-                                      <p className="text-xs text-destructive">
-                                        {sku.blockReason}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                    blocked
-                                      ? "text-destructive"
-                                      : skuIgnored
-                                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                                        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                                  }`}
-                                >
-                                  {blocked
-                                    ? "Error"
-                                    : skuIgnored
-                                      ? "Ignorado"
-                                      : "Incluido"}
-                                </span>
-                              </label>
-                            )
-                          })}
-                          {brandSkus.length === 0 && (
-                            <p className="text-sm text-muted-foreground">
-                              No hay SKUs para esta marca.
-                            </p>
-                          )}
-                        </div>
+                      {brandSkus.map((sku) => {
+                        const skuIgnored = data.ignoredSkus.includes(sku.sku)
+                        const brandIgnored = data.ignoredBrands.includes(b)
+                        const blocked = sku.state === "BLOCKED"
+                        return (
+                          <label
+                            key={sku.sku}
+                            className={`flex items-center justify-between gap-3 rounded-md border p-3 ${
+                              blocked
+                                ? "opacity-50"
+                                : skuIgnored || brandIgnored
+                                  ? "opacity-60"
+                                  : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={selectedSkus.has(sku.sku)}
+                                disabled={blocked || brandIgnored}
+                                onCheckedChange={(v) => {
+                                  setSelectedSkus((prev) => {
+                                    const next = new Set(prev)
+                                    if (v) next.add(sku.sku)
+                                    else next.delete(sku.sku)
+                                    return next
+                                  })
+                                }}
+                              />
+                              <div>
+                                <p className="font-mono text-xs">{sku.sku}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {sku.reference ?? "—"} · {sku.color ?? "—"} ·{" "}
+                                  {sku.category ?? "—"}
+                                </p>
+                                {blocked && (
+                                  <p className="text-xs text-destructive">
+                                    {sku.blockReason}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                blocked
+                                  ? "text-destructive"
+                                  : skuIgnored
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                              }`}
+                            >
+                              {SOFTIX_STATE_LABELS[sku.state]}
+                            </span>
+                          </label>
+                        )
+                      })}
+                      {brandSkus.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No hay SKUs para esta marca.
+                        </p>
+                      )}
+                    </div>
                   )
                 })}
               </>
@@ -556,15 +621,38 @@ export function ImportWizard({ onViewLogs }: Props) {
                 <p className="text-sm text-muted-foreground">
                   Resumen de lo que se hará al confirmar.
                 </p>
-                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <Metric label="Se crearán" value={data.newCount} />
-                  <Metric label="Actualizados" value={data.updated} />
+                  <Metric label="Se actualizarán" value={data.updated} />
                   <Metric label="Se ocultarán" value={data.hidden} />
+                  <Metric label="Con error" value={data.errors} />
+                  <Metric label="Marcas nuevas" value={data.newBrands.length} />
                   <Metric
-                    label="Con error"
-                    value={data.errors + data.blockedCount}
+                    label="Categorías nuevas"
+                    value={data.newCategories.length}
                   />
                 </dl>
+
+                {(() => {
+                  const newBrands = data.newBrands
+                  const newCategories = data.newCategories
+                  return (
+                    <>
+                      {newBrands.length > 0 && (
+                        <SkuSection
+                          title="Marcas nuevas"
+                          items={newBrands.map((b) => ({ sku: b }))}
+                        />
+                      )}
+                      {newCategories.length > 0 && (
+                        <SkuSection
+                          title="Categorías nuevas"
+                          items={newCategories.map((c) => ({ sku: c }))}
+                        />
+                      )}
+                    </>
+                  )
+                })()}
 
                 {data.toCreate.length > 0 && (
                   <SkuSection
@@ -623,7 +711,9 @@ export function ImportWizard({ onViewLogs }: Props) {
                       const ns = data.newSkus.find((n) => n.sku === sku)
                       return {
                         sku,
-                        detail: ns?.blockReason ?? data.issues.find((i) => i.sku === sku)?.message,
+                        detail:
+                          ns?.blockReason ??
+                          data.issues.find((i) => i.sku === sku)?.message,
                       }
                     })}
                   />
@@ -650,7 +740,6 @@ export function ImportWizard({ onViewLogs }: Props) {
                     })}
                   />
                 )}
-
               </>
             ) : null}
           </>
@@ -666,23 +755,13 @@ export function ImportWizard({ onViewLogs }: Props) {
               </span>
               Importación terminada
             </p>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Metric
-                label="Se crearon"
-                value={
-                  detail.data
-                    ? new Set(
-                        detail.data.logs
-                          .filter((l) => l.field === "creación")
-                          .map((l) => l.sku)
-                          .filter((s): s is string => !!s),
-                      ).size
-                    : 0
-                }
-              />
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Metric label="Creados" value={lastRun.created} />
               <Metric label="Actualizados" value={lastRun.updated} />
               <Metric label="Ocultos" value={lastRun.hidden} />
               <Metric label="Con error" value={lastRun.errors} />
+              <Metric label="Marcas nuevas" value={lastRun.newBrands} />
+              <Metric label="Categorías nuevas" value={lastRun.newCategories} />
             </dl>
 
             {detail.data && (
@@ -692,8 +771,12 @@ export function ImportWizard({ onViewLogs }: Props) {
                   const created = Array.from(
                     new Set(
                       logs
-                        .filter((l) => l.field === "creación")
-                        .map((l) => l.sku)
+                        .filter(
+                          (l) =>
+                            l.entityType === "PRODUCT" &&
+                            l.action === "CREATED",
+                        )
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
@@ -702,12 +785,10 @@ export function ImportWizard({ onViewLogs }: Props) {
                       logs
                         .filter(
                           (l) =>
-                            l.level !== "ERROR" &&
-                            l.field !== null &&
-                            l.field !== "creación" &&
-                            !(l.field === "estado" && l.newValue === "HIDDEN"),
+                            l.entityType === "PRODUCT" &&
+                            (l.action === "UPDATED" || l.action === "RESTORED"),
                         )
-                        .map((l) => l.sku)
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
@@ -716,17 +797,21 @@ export function ImportWizard({ onViewLogs }: Props) {
                       logs
                         .filter(
                           (l) =>
-                            l.field === "estado" && l.newValue === "HIDDEN",
+                            l.entityType === "PRODUCT" && l.action === "HIDDEN",
                         )
-                        .map((l) => l.sku)
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
                   const errors = Array.from(
                     new Set(
                       logs
-                        .filter((l) => l.level === "ERROR")
-                        .map((l) => l.sku)
+                        .filter(
+                          (l) =>
+                            l.entityType === "PRODUCT" &&
+                            l.action === "BLOCKED",
+                        )
+                        .map((l) => l.entityKey)
                         .filter((s): s is string => !!s),
                     ),
                   )
@@ -745,7 +830,9 @@ export function ImportWizard({ onViewLogs }: Props) {
                         <SkuSection
                           title="Se actualizaron"
                           items={updated.map((sku) => {
-                            const items = logs.filter((l) => l.sku === sku)
+                            const items = logs.filter(
+                              (l) => l.entityKey === sku,
+                            )
                             return {
                               sku,
                               detail: items
@@ -764,7 +851,8 @@ export function ImportWizard({ onViewLogs }: Props) {
                           title="Se ocultaron"
                           items={hidden.map((sku) => ({
                             sku,
-                            detail: logs.find((l) => l.sku === sku)?.message,
+                            detail: logs.find((l) => l.entityKey === sku)
+                              ?.message,
                           }))}
                         />
                       )}
@@ -773,10 +861,53 @@ export function ImportWizard({ onViewLogs }: Props) {
                           title="Con error"
                           items={errors.map((sku) => ({
                             sku,
-                            detail: logs.find((l) => l.sku === sku)?.message,
+                            detail: logs.find((l) => l.entityKey === sku)
+                              ?.message,
                           }))}
                         />
                       )}
+                      {(() => {
+                        const newBrands = Array.from(
+                          new Set(
+                            logs
+                              .filter(
+                                (l) =>
+                                  l.entityType === "BRAND" &&
+                                  l.action === "CREATED",
+                              )
+                              .map((l) => l.entityKey)
+                              .filter((v): v is string => !!v),
+                          ),
+                        )
+                        const newCategories = Array.from(
+                          new Set(
+                            logs
+                              .filter(
+                                (l) =>
+                                  l.entityType === "CATEGORY" &&
+                                  l.action === "CREATED",
+                              )
+                              .map((l) => l.entityKey)
+                              .filter((v): v is string => !!v),
+                          ),
+                        )
+                        return (
+                          <>
+                            {newBrands.length > 0 && (
+                              <SkuSection
+                                title="Marcas nuevas"
+                                items={newBrands.map((b) => ({ sku: b }))}
+                              />
+                            )}
+                            {newCategories.length > 0 && (
+                              <SkuSection
+                                title="Categorías nuevas"
+                                items={newCategories.map((c) => ({ sku: c }))}
+                              />
+                            )}
+                          </>
+                        )
+                      })()}
                     </>
                   )
                 })()}
@@ -795,7 +926,6 @@ export function ImportWizard({ onViewLogs }: Props) {
     </Card>
   )
 }
-
 
 function SkuSection({
   title,
