@@ -42,7 +42,7 @@
 
 ## Tests
 
-- Test runner is **Vitest** with jsdom, but **no tests exist yet**. Run with `pnpm test`.
+- Test runner is **Vitest** with jsdom. Tests live next to components as `*.test.tsx`. Run with `pnpm test`.
 
 ## Build
 
