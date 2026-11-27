@@ -1,17 +1,12 @@
 import { useState } from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { createMeQueryOptions } from "#/query-options/auth"
 import { createNotificationPreferencesQueryOptions } from "#/query-options/notifications"
-import { DeleteAccount } from "#/components/profile/delete-account"
-import { GoogleAccountSection } from "#/components/profile/google-account-section"
 import { NotificationsForm } from "#/components/profile/notifications-form"
 import { NotificationsRead } from "#/components/profile/notifications-read"
-import { PasswordForm } from "#/components/profile/password-form"
-import { PersonalInfoForm } from "#/components/profile/personal-info-form"
-import { PersonalInfoRead } from "#/components/profile/personal-info-read"
 import { Button } from "#/components/ui/button"
-import { FieldGroup } from "#/components/ui/field"
+import { Card, CardContent } from "#/components/ui/card"
 
 export const Route = createFileRoute(
   "/_main-layout/_authenticated/myaccount/profile",
@@ -24,40 +19,50 @@ function RouteComponent() {
   const { data: notifs, isPending: notifsPending } = useQuery(
     createNotificationPreferencesQueryOptions(),
   )
-  const [editMode, setEditMode] = useState(false)
+  const [editNotifs, setEditNotifs] = useState(false)
 
   if (!user) return null
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Mi Perfil</h1>
-        {!editMode ? (
-          <Button onClick={() => setEditMode(true)}>Editar preferencias</Button>
-        ) : (
-          <Button onClick={() => setEditMode(false)}>Cancelar</Button>
+      <h1 className="mb-6 text-2xl font-bold">Mi Perfil</h1>
+
+      <div className="grid gap-6">
+        <Card className="p-0">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Datos de contacto</h2>
+                <p className="mt-4 text-sm text-muted-foreground">Celular</p>
+                <p className="text-base font-medium">{user.phone}</p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/myaccount/softix">Editar mis datos</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {!notifsPending && (
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Notificaciones</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditNotifs((value) => !value)}
+              >
+                {editNotifs ? "Cancelar" : "Editar preferencias"}
+              </Button>
+            </div>
+            {editNotifs && notifs ? (
+              <NotificationsForm preferences={notifs} />
+            ) : (
+              <NotificationsRead preferences={notifs} />
+            )}
+          </div>
         )}
       </div>
-
-      <FieldGroup>
-        {editMode ? (
-          <PersonalInfoForm user={user} />
-        ) : (
-          <PersonalInfoRead user={user} />
-        )}
-
-        {editMode && <PasswordForm hasPassword={user.hasPassword} />}
-
-        {editMode && <GoogleAccountSection user={user} />}
-
-        {editMode ? (
-          notifs && <NotificationsForm preferences={notifs} />
-        ) : (
-          <>{!notifsPending && <NotificationsRead preferences={notifs} />}</>
-        )}
-
-        {editMode && <DeleteAccount />}
-      </FieldGroup>
     </div>
   )
 }

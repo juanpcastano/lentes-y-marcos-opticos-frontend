@@ -82,18 +82,11 @@ const ActionsMenu = () => {
                 </DropdownMenuItem>
               </>
             ) : (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link to="/login" search={{ redirect: currentPath }}>
-                    Iniciar Sesión
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/signup" search={{ redirect: currentPath }}>
-                    Registrarse
-                  </Link>
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem asChild>
+                <Link to="/login" search={{ redirect: currentPath }}>
+                  Iniciar Sesión
+                </Link>
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

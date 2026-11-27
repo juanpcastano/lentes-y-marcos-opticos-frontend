@@ -21,7 +21,7 @@ export function NotificationsRead({ preferences }: NotificationsReadProps) {
         </div>
         {enabled.length > 0 ? (
           <p className="text-sm text-foreground">
-            Recibiendo correos sobre:{" "}
+            Recibiendo avisos por WhatsApp sobre:{" "}
             <span className="font-medium">{enabled.join(", ")}</span>
           </p>
         ) : (

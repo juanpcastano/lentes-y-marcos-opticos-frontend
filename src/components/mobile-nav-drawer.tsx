@@ -151,14 +151,6 @@ const MobileNavDrawer = () => {
                 >
                   Iniciar Sesión
                 </Link>
-                <Link
-                  to="/signup"
-                  search={{ redirect: currentPath }}
-                  className="rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted"
-                  onClick={handleClose}
-                >
-                  Registrarse
-                </Link>
               </div>
             )}
           </div>

@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
-import { createContext, useContext } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { createContext, useContext, useEffect, useRef } from "react"
 import { createMeQueryOptions, ME_QUERY_KEY } from "#/query-options/auth"
+import { CART_QUERY_KEY } from "#/query-options/cart"
+import { clearCart } from "#/services/cart"
 import type { User } from "#/services/auth"
 
 interface AuthContextValue {
@@ -12,6 +14,25 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery(createMeQueryOptions())
+  const queryClient = useQueryClient()
+  const previousUserId = useRef<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (isLoading) return
+
+    const currentUserId = user?.id ?? null
+    if (previousUserId.current === undefined) {
+      previousUserId.current = currentUserId
+      return
+    }
+
+    if (previousUserId.current !== currentUserId) {
+      previousUserId.current = currentUserId
+      void clearCart().then((cart) => {
+        queryClient.setQueryData(CART_QUERY_KEY, cart)
+      })
+    }
+  }, [isLoading, queryClient, user?.id])
 
   return (
     <AuthContext.Provider value={{ user: user ?? null, isLoading }}>

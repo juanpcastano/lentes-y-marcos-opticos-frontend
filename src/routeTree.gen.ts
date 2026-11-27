@@ -34,6 +34,7 @@ import { Route as MainLayoutAuthenticatedMyaccountRouteImport } from './routes/_
 import { Route as MainLayoutAuthenticatedCheckoutRouteImport } from './routes/_main-layout/_authenticated/checkout'
 import { Route as MainLayoutAuthenticatedCartRouteImport } from './routes/_main-layout/_authenticated/cart'
 import { Route as MainLayoutAuthenticatedMyaccountIndexRouteImport } from './routes/_main-layout/_authenticated/myaccount/index'
+import { Route as MainLayoutAuthenticatedMyaccountSoftixRouteImport } from './routes/_main-layout/_authenticated/myaccount/softix'
 import { Route as MainLayoutAuthenticatedMyaccountProfileRouteImport } from './routes/_main-layout/_authenticated/myaccount/profile'
 import { Route as MainLayoutAuthenticatedMyaccountOrdersRouteImport } from './routes/_main-layout/_authenticated/myaccount/orders'
 import { Route as MainLayoutAuthenticatedMyaccountAppointmentsRouteImport } from './routes/_main-layout/_authenticated/myaccount/appointments'
@@ -167,6 +168,12 @@ const MainLayoutAuthenticatedMyaccountIndexRoute =
     path: '/',
     getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
   } as any)
+const MainLayoutAuthenticatedMyaccountSoftixRoute =
+  MainLayoutAuthenticatedMyaccountSoftixRouteImport.update({
+    id: '/softix',
+    path: '/softix',
+    getParentRoute: () => MainLayoutAuthenticatedMyaccountRoute,
+  } as any)
 const MainLayoutAuthenticatedMyaccountProfileRoute =
   MainLayoutAuthenticatedMyaccountProfileRouteImport.update({
     id: '/profile',
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/myaccount/softix': typeof MainLayoutAuthenticatedMyaccountSoftixRoute
   '/myaccount/': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRoutesByTo {
@@ -254,6 +262,7 @@ export interface FileRoutesByTo {
   '/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/myaccount/softix': typeof MainLayoutAuthenticatedMyaccountSoftixRoute
   '/myaccount': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRoutesById {
@@ -287,6 +296,7 @@ export interface FileRoutesById {
   '/_main-layout/_authenticated/myaccount/appointments': typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   '/_main-layout/_authenticated/myaccount/orders': typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   '/_main-layout/_authenticated/myaccount/profile': typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  '/_main-layout/_authenticated/myaccount/softix': typeof MainLayoutAuthenticatedMyaccountSoftixRoute
   '/_main-layout/_authenticated/myaccount/': typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 export interface FileRouteTypes {
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
+    | '/myaccount/softix'
     | '/myaccount/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/myaccount/appointments'
     | '/myaccount/orders'
     | '/myaccount/profile'
+    | '/myaccount/softix'
     | '/myaccount'
   id:
     | '__root__'
@@ -379,6 +391,7 @@ export interface FileRouteTypes {
     | '/_main-layout/_authenticated/myaccount/appointments'
     | '/_main-layout/_authenticated/myaccount/orders'
     | '/_main-layout/_authenticated/myaccount/profile'
+    | '/_main-layout/_authenticated/myaccount/softix'
     | '/_main-layout/_authenticated/myaccount/'
   fileRoutesById: FileRoutesById
 }
@@ -567,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountIndexRouteImport
       parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
     }
+    '/_main-layout/_authenticated/myaccount/softix': {
+      id: '/_main-layout/_authenticated/myaccount/softix'
+      path: '/softix'
+      fullPath: '/myaccount/softix'
+      preLoaderRoute: typeof MainLayoutAuthenticatedMyaccountSoftixRouteImport
+      parentRoute: typeof MainLayoutAuthenticatedMyaccountRoute
+    }
     '/_main-layout/_authenticated/myaccount/profile': {
       id: '/_main-layout/_authenticated/myaccount/profile'
       path: '/profile'
@@ -625,6 +645,7 @@ interface MainLayoutAuthenticatedMyaccountRouteChildren {
   MainLayoutAuthenticatedMyaccountAppointmentsRoute: typeof MainLayoutAuthenticatedMyaccountAppointmentsRoute
   MainLayoutAuthenticatedMyaccountOrdersRoute: typeof MainLayoutAuthenticatedMyaccountOrdersRoute
   MainLayoutAuthenticatedMyaccountProfileRoute: typeof MainLayoutAuthenticatedMyaccountProfileRoute
+  MainLayoutAuthenticatedMyaccountSoftixRoute: typeof MainLayoutAuthenticatedMyaccountSoftixRoute
   MainLayoutAuthenticatedMyaccountIndexRoute: typeof MainLayoutAuthenticatedMyaccountIndexRoute
 }
 
@@ -638,6 +659,8 @@ const MainLayoutAuthenticatedMyaccountRouteChildren: MainLayoutAuthenticatedMyac
       MainLayoutAuthenticatedMyaccountOrdersRoute,
     MainLayoutAuthenticatedMyaccountProfileRoute:
       MainLayoutAuthenticatedMyaccountProfileRoute,
+    MainLayoutAuthenticatedMyaccountSoftixRoute:
+      MainLayoutAuthenticatedMyaccountSoftixRoute,
     MainLayoutAuthenticatedMyaccountIndexRoute:
       MainLayoutAuthenticatedMyaccountIndexRoute,
   }

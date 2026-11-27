@@ -23,18 +23,22 @@ import {
   TooltipTrigger,
 } from "#/components/ui/tooltip"
 import type { UserAppointment } from "#/services/user-appointments"
+import { useAuth } from "#/components/auth-provider"
 
 export const Route = createFileRoute("/_main-layout/appointments")({
   component: AppointmentsPage,
 })
 
 function AppointmentsPage() {
+  const { isLoading: authLoading } = useAuth()
   const { data: availability = [] } = useQuery(
     createAppointmentAvailabilityQueryOptions(),
   )
   const { data: appointments = [] } = useQuery(
     createUserAppointmentsQueryOptions(),
   )
+
+  if (authLoading) return null
 
   const pendingAppointment = appointments.find((a) => a.status === "pending")
 

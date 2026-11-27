@@ -1,6 +1,8 @@
 import { queryOptions } from "@tanstack/react-query"
-import { fetchMe, getPasswordCodeStatus } from "#/services/auth"
-import type { PasswordCodeStatus, User } from "#/services/auth"
+import { fetchMe } from "#/services/auth"
+import type { User } from "#/services/auth"
+import { fetchSoftixProfile } from "#/services/softix"
+import type { SoftixProfile } from "#/services/softix"
 
 export const ME_QUERY_KEY = ["me"] as const
 
@@ -12,11 +14,11 @@ export function createMeQueryOptions() {
   })
 }
 
-export const PASSWORD_CODE_STATUS_QUERY_KEY = ["password-code-status"] as const
+export const SOFTIX_PROFILE_QUERY_KEY = ["softix-profile"] as const
 
-export function createPasswordCodeStatusQueryOptions() {
-  return queryOptions<PasswordCodeStatus>({
-    queryKey: PASSWORD_CODE_STATUS_QUERY_KEY,
-    queryFn: getPasswordCodeStatus,
+export function createSoftixProfileQueryOptions() {
+  return queryOptions<SoftixProfile>({
+    queryKey: SOFTIX_PROFILE_QUERY_KEY,
+    queryFn: fetchSoftixProfile,
   })
 }
