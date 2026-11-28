@@ -5,14 +5,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import {
-  UserCircle,
-  ShoppingBag,
-  Calendar,
-  MapPin,
-  Link2,
-  LogOut,
-} from "lucide-react"
+import { UserCircle, ShoppingBag, Calendar, MapPin, LogOut } from "lucide-react"
 import { logout } from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
 import { LayoutErrorPage } from "#/components/layout-error-page"
@@ -29,7 +22,6 @@ const navItems = [
   { to: "/myaccount/orders", label: "Historial de Compras", icon: ShoppingBag },
   { to: "/myaccount/appointments", label: "Citas Agendadas", icon: Calendar },
   { to: "/myaccount/addresses", label: "Direcciones", icon: MapPin },
-  { to: "/myaccount/softix", label: "Mis datos", icon: Link2 },
 ]
 
 function RouteComponent() {

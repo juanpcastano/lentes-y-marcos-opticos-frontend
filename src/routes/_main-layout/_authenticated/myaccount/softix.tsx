@@ -1,20 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { SoftixProfileForm } from "#/components/softix-profile-form"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
+/**
+ * Ruta heredada. Los datos personales ahora se editan en línea desde
+ * "Mi Perfil", así que se conserva este destino solo para enlaces antiguos.
+ */
 export const Route = createFileRoute(
   "/_main-layout/_authenticated/myaccount/softix",
 )({
-  component: RouteComponent,
+  beforeLoad: () => {
+    throw redirect({ to: "/myaccount/profile" })
+  },
 })
-
-function RouteComponent() {
-  return (
-    <div className="w-full max-w-2xl">
-      <h1 className="mb-3 text-2xl font-bold">Mis datos</h1>
-      <p className="mb-6 text-muted-foreground">
-        Revisa y actualiza tus datos personales.
-      </p>
-      <SoftixProfileForm />
-    </div>
-  )
-}

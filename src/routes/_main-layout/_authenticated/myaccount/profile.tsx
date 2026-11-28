@@ -1,12 +1,27 @@
 import { useState } from "react"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { createMeQueryOptions } from "#/query-options/auth"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import {
+  createMeQueryOptions,
+  createSoftixProfileQueryOptions,
+} from "#/query-options/auth"
 import { createNotificationPreferencesQueryOptions } from "#/query-options/notifications"
 import { NotificationsForm } from "#/components/profile/notifications-form"
 import { NotificationsRead } from "#/components/profile/notifications-read"
+import { PersonalDataForm } from "#/components/profile/personal-data-form"
+import { PersonalDataRead } from "#/components/profile/personal-data-read"
+import {
+  NotificationsSkeleton,
+  PersonalDataSkeleton,
+} from "#/components/profile/profile-skeleton"
 import { Button } from "#/components/ui/button"
-import { Card, CardContent } from "#/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "#/components/ui/tooltip"
 
 export const Route = createFileRoute(
   "/_main-layout/_authenticated/myaccount/profile",
@@ -15,35 +30,83 @@ export const Route = createFileRoute(
 })
 
 function RouteComponent() {
-  const { data: user } = useQuery(createMeQueryOptions())
+  const { data: user, isPending: userPending } = useQuery(
+    createMeQueryOptions(),
+  )
+  const { data: profile, isPending: profilePending } = useQuery(
+    createSoftixProfileQueryOptions(),
+  )
   const { data: notifs, isPending: notifsPending } = useQuery(
     createNotificationPreferencesQueryOptions(),
   )
+  const [editData, setEditData] = useState(false)
   const [editNotifs, setEditNotifs] = useState(false)
+  const nextEditDate = profile?.nextEditAllowedAt
+    ? new Date(profile.nextEditAllowedAt)
+    : null
+  const cooldownActive = Boolean(
+    nextEditDate &&
+    !Number.isNaN(nextEditDate.getTime()) &&
+    nextEditDate.getTime() > Date.now(),
+  )
+  const cooldownLabel =
+    cooldownActive && nextEditDate
+      ? format(nextEditDate, "d 'de' MMMM 'de' yyyy", { locale: es })
+      : null
 
-  if (!user) return null
+  if (!user && !userPending) return null
 
   return (
     <div className="w-full max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold">Mi Perfil</h1>
 
       <div className="grid gap-6">
-        <Card className="p-0">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Datos de contacto</h2>
-                <p className="mt-4 text-sm text-muted-foreground">Celular</p>
-                <p className="text-base font-medium">{user.phone}</p>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/myaccount/softix">Editar mis datos</Link>
-              </Button>
+        {userPending || profilePending ? (
+          <PersonalDataSkeleton />
+        ) : user && profile ? (
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Datos personales</h2>
+              {cooldownActive && !editData ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="inline-flex rounded-4xl outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                      tabIndex={0}
+                    >
+                      <Button variant="outline" size="sm" disabled>
+                        Editar datos
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Podrás editar tus datos de nuevo el {cooldownLabel}.
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditData((value) => !value)}
+                >
+                  {editData ? "Cancelar" : "Editar datos"}
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            {editData ? (
+              <PersonalDataForm
+                profile={profile}
+                onComplete={() => setEditData(false)}
+              />
+            ) : (
+              <PersonalDataRead user={user} profile={profile} />
+            )}
+          </div>
+        ) : null}
 
-        {!notifsPending && (
+        {notifsPending ? (
+          <NotificationsSkeleton />
+        ) : (
           <div className="grid gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Notificaciones</h2>

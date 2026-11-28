@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "#/components/ui/select"
 import { ApiError } from "#/lib/api"
+import { documentTypeLabel } from "#/lib/document-types"
 import { splitContactMessage } from "#/lib/errors"
 import { ContactDialog } from "#/components/contact-dialog"
 import { createPhoneCustomer, linkPhoneCustomer } from "#/services/auth"
@@ -56,18 +57,7 @@ interface FormState {
   gender: string
 }
 
-const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-  CC: "Cédula de ciudadanía",
-  CE: "Cédula de extranjería",
-  TI: "Tarjeta de identidad",
-  PA: "Pasaporte",
-}
-
 const GENDERS = ["Masculino", "Femenino"]
-
-function documentTypeLabel(type: string): string {
-  return DOCUMENT_TYPE_LABELS[type] ?? type
-}
 
 function visibleEmail(email: string | null | undefined): string {
   if (!email) return ""

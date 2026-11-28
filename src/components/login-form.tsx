@@ -35,6 +35,7 @@ import type {
 } from "#/services/auth"
 import { ME_QUERY_KEY } from "#/query-options/auth"
 import { ApiError } from "#/lib/api"
+import { clearUserQueries } from "#/lib/query-client"
 import { splitContactMessage } from "#/lib/errors"
 import { useCountdown } from "#/hooks/use-countdown"
 import { SoftixCustomerForm } from "#/components/softix-customer-form"
@@ -117,6 +118,7 @@ export function LoginForm({
     onSuccess: (result) => {
       setError("")
       if (result.accessToken && result.user) {
+        clearUserQueries(queryClient)
         queryClient.setQueryData(ME_QUERY_KEY, result.user)
         showWelcome("login")
         return
@@ -232,6 +234,7 @@ export function LoginForm({
 
   const onCompleted = (result: PhoneAuthResponse) => {
     if (result.user) {
+      clearUserQueries(queryClient)
       queryClient.setQueryData(ME_QUERY_KEY, result.user)
     }
     showWelcome("register")

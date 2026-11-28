@@ -1,4 +1,5 @@
 import { api, getAccessToken, setAccessToken } from "#/lib/api"
+import { clearUserQueries } from "#/lib/query-client"
 import { clearCart } from "#/services/cart"
 import type { SoftixCreateCustomer } from "#/services/softix"
 
@@ -144,5 +145,6 @@ export async function logout(): Promise<void> {
   } finally {
     setAccessToken(null)
     await clearCart()
+    clearUserQueries()
   }
 }

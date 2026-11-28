@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createContext, useContext, useEffect, useRef } from "react"
 import { createMeQueryOptions, ME_QUERY_KEY } from "#/query-options/auth"
 import { CART_QUERY_KEY } from "#/query-options/cart"
+import { clearUserQueries } from "#/lib/query-client"
 import { clearCart } from "#/services/cart"
 import type { User } from "#/services/auth"
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (previousUserId.current !== currentUserId) {
       previousUserId.current = currentUserId
+      clearUserQueries(queryClient)
       void clearCart().then((cart) => {
         queryClient.setQueryData(CART_QUERY_KEY, cart)
       })

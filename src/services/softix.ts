@@ -15,6 +15,7 @@ export interface SoftixProfile {
   postalCode: string | null
   maritalStatus: string | null
   occupation: string | null
+  nextEditAllowedAt: string | null
 }
 
 export interface SoftixProfileUpdate {

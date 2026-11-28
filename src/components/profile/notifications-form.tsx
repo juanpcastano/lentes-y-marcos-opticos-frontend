@@ -33,11 +33,6 @@ export function NotificationsForm({ preferences }: NotificationsFormProps) {
     mutation.mutate(draft)
   }
 
-  const handleCancel = () => {
-    setDraft(preferences)
-    setSaved(false)
-  }
-
   const toggle = (key: keyof NotificationPreferences, checked: boolean) => {
     setDraft({ ...draft, [key]: checked })
     setSaved(false)
@@ -80,17 +75,13 @@ export function NotificationsForm({ preferences }: NotificationsFormProps) {
                 Preferencias guardadas correctamente
               </FieldDescription>
             )}
-            <div className="flex gap-2">
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Guardando..." : "Guardar preferencias"}
-              </Button>
+            <div className="flex gap-2 w-full">
               <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
+                className="w-full"
+                type="submit"
                 disabled={mutation.isPending}
               >
-                Cancelar
+                {mutation.isPending ? "Guardando..." : "Guardar preferencias"}
               </Button>
             </div>
           </FieldGroup>
